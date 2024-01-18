@@ -3,8 +3,6 @@
 #include <RcppArmadilloExtensions/sample.h>
 #include <thread>
 #include <iostream>
-#include <immintrin.h>
-#include <omp.h>
 
 using namespace std;
 using namespace Rcpp;
@@ -111,7 +109,7 @@ MLE_res mmleCpp(const arma::cube& X,
     warning({"At least n >= ceil(p/q + q/p) + 2 = " + std::to_string((int)smallest_n) + " samples are needed to ensure convergence of the mmcd algorithm and uniqueness of the estimators.\n" +
       "If at least n >= ceil(max(p/q + q/p)) + 1 = " + std::to_string((int)minimal_n) + " samples are provided the algorithm should return positive definite estimates without those guarantees."});
     if(minimal_n > n){
-      stop("Only n = " + std::to_string((int)n) + " samples provided while at least "+ std::to_string((int)minimal_n) + " = ceil(max(p/q + q/p)) + 1) are required");
+      stop("Only n = " + std::to_string((int)n) + " samples provided while at least "+ std::to_string((int)minimal_n) + " = ceil(max(p/q + q/p)) + 1) are requiered");
     }
   }
   // calculate mean
@@ -180,15 +178,15 @@ MLE_res mmleCpp(const arma::cube& X,
   return(res);
 }
 
-//' Maximum Likelihood Estimation for Matrix Normal Distribution
+//' Maximum Likelihood Estimation for Matrix Normal Distribtuion
 //'
 //' \code{mmle} computes the Maximum Likelihood Estimators (MLEs) for the matrix normal distribution
 //' using the iterative flip-flop algorithm \insertCite{Dutilleul1999}{robustmatrix}.
 //'
 //' @param X a 3d array of dimension \eqn{(p,q,n)}, containing \eqn{n} matrix-variate samples of \eqn{p} rows and \eqn{q} columns in each slice.
 //' @param max_iter upper limit of iterations.
-//' @param lambda is a smoothing parameter for the rowwise and columnwise covariance matrices.
-//' @param silent Logical. If FALSE (default), warnings and errors are printed.
+//' @param lambda a smooting parameter for the rowwise and columnwise covariance matrices.
+//' @param silent Logical. If FALSE (default) warnings and errors are printed.
 //'
 //' @return A list containing the following:
 //' \item{\code{mu}}{Estimated \eqn{p \times q} mean matrix.}
@@ -196,7 +194,7 @@ MLE_res mmleCpp(const arma::cube& X,
 //' \item{\code{cov_col}}{Estimated \eqn{q} times \eqn{q} columnwise covariance matrix.}
 //' \item{\code{cov_row_inv}}{Inverse of \code{cov_row}.}
 //' \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
-//' \item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in the final iteration.}
+//' \item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in final iteration.}
 //' \item{\code{iterations}}{Number of iterations of the mmle procedure.}
 //'
 //' @references
@@ -330,7 +328,7 @@ Cstep_res cstepCpp(const arma::cube& X,
 
   // C-Step counter
   int i = 0;
-  // convergence criterion for the difference of determinants
+  // convergence criterion for difference of determinants
   double det_diff = 0;
   // vector to store determinants
   arma::vec dets;
@@ -354,7 +352,7 @@ Cstep_res cstepCpp(const arma::cube& X,
                       (int)est.cov_row_inv.size() != p*p ||
                       (int)est.cov_col_inv.size() != q*q);
     if(!init && check_dim){
-      warning({"'init' was set to FALSE, and the dimensions of the initial estimators 'est' do not match the dimension of the data 'X'.\nTo avoid an error, the 'init' is set to TRUE. Estimators in 'est' will be discarded and properly initialized"});
+      warning("'init' was set to FALSE and the dimensions of the initial estimators 'est' do not match the dimension of the data 'X'.\nTo avoid an error the 'init' is set to TRUE. Estimators in 'est' will be discarded and properly initialized");
       init = TRUE;
     }
     if(init){
@@ -405,7 +403,7 @@ Cstep_res cstepCpp(const arma::cube& X,
         det_diff_crit = true;
       } else {
         det_diff = dets(i -1) - dets(i); // this is always larger or equal to zero
-        det_diff_crit = det_diff  > 0.001; // while the difference between determinants is larger than thresh, continue
+        det_diff_crit = det_diff  > 0.001; // while difference between determinants is larger then thresh, continue
       }
       i++;
     }
@@ -427,8 +425,8 @@ Cstep_res cstepCpp(const arma::cube& X,
 //'
 //' This function is part of the FastMMCD algorithm \insertCite{mayrhofer2024}{robustmatrix}.
 //'
-//' @param h_init Integer. Size of initial h-subset. If smaller than 0 (default), the size is chosen automatically.
-//' @param init Logical. If TRUE (default), elemental subsets are used to initialize the procedure.
+//' @param h_init Integer. Size of initial h-subset. If smaller than 0 (default) size is chosen automatically.
+//' @param init Logical. If TRUE (default) elemental subsets are used to initialize the procedure.
 //' @param max_iter upper limit of C-step iterations (default is 100)
 //' @inheritParams mmcd
 //'
@@ -440,7 +438,7 @@ Cstep_res cstepCpp(const arma::cube& X,
 //' \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
 //' \item{\code{md}}{Squared Mahalanobis distances.}
 //' \item{\code{md_raw}}{Squared Mahalanobis distances based on \emph{raw} MMCD estimators.}
-//' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariance).}
+//' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariane).}
 //' \item{\code{dets}}{Objective values for the final h-subsets.}
 //' \item{\code{h_subset}}{Final h-subset of \emph{raw} MMCD estimators.}
 //' \item{\code{iterations}}{Number of C-steps.}
@@ -498,13 +496,13 @@ Rcpp::List cstep(const arma::cube& X,
 //' @param max_iter_MLE upper limit of MLE iterations (default is 100)
 //' @param max_iter_cstep_init upper limit of C-step iterations for initial h-subsets (default is 2)
 //' @param max_iter_MLE_init upper limit of MLE iterations for initial h-subsets (default is 2)
-//' @param adapt_alpha Logical. If TRUE (default), alpha is adapted to consider the dimension of the data.
-//' @param reweight Logical. If TRUE (default), the reweighted MMCD estimators are computed.
+//' @param adapt_alpha Logical. If TRUE (default) alpha is adapted to take the dimension of the data into account.
+//' @param reweight Logical. If TRUE (default) the reweighted MMCD estimators are computed.
 //' @param scale_consistency Character. Either "quant" (default) or "mmd_med". If "quant", the consistency factor is chosen to achieve consistency under the matrix normal distribution.
 //' If "mmd_med", the consistency factor is chosen based on the Mahalanobis distances of the observations.
-//' @param outlier_quant numeric parameter between 0 and 1, specifying the Chi-square quantile used in the reweighting step.
+//' @param outlier_quant numeric parameter between 0 and 1. Chi-square quantile used in the reweighting step.
 //' @param nthreads Integer. If 1 (default), all computations are carried out sequentially.
-//' If larger than 1, C-steps are carried out in parallel using \code{nthreads} threads.
+//' If larger then 1, C-steps are carried out in parallel using \code{nthreads} threads.
 //' If < 0, all possible threads are used.
 //' @inheritParams mmle
 //'
@@ -516,7 +514,7 @@ Rcpp::List cstep(const arma::cube& X,
 //' \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
 //' \item{\code{md}}{Squared Mahalanobis distances.}
 //' \item{\code{md_raw}}{Squared Mahalanobis distances based on \emph{raw} MMCD estimators.}
-//' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariance).}
+//' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariane).}
 //' \item{\code{alpha}}{The (adjusted) value of alpha used to determine the size of the h-subset.}
 //' \item{\code{consistency_factors}}{Consistency factors for raw and reweighted MMCD estimators.}
 //' \item{\code{dets}}{Objective values for the final h-subsets.}
@@ -532,7 +530,7 @@ Rcpp::List cstep(const arma::cube& X,
 //' \insertCite{Rousseeuw1985,Rousseeuw1999}{robustmatrix} to the matrix-variate setting.
 //' It looks for the \eqn{h} observations, \eqn{h = \alpha * n}, whose covariance matrix has the smallest determinant.
 //' The FastMMCD algorithm is used for computation and is described in detail in \insertCite{mayrhofer2024}{robustmatrix}.
-//' NOTE: The procedure depends on \emph{random} initial subsets. Setting a seed is only possible if \code{nthreads = 1}.
+//' NOTE: The procedure depends on \emph{random} initial subsets. Currently setting a seed is only possible if \code{nthreads = 1}.
 //'
 //' @references
 //' \insertAllCited{}
@@ -546,7 +544,7 @@ Rcpp::List cstep(const arma::cube& X,
 //' mu = matrix(rep(0, p*q), nrow = p, ncol = q)
 //' cov_row = matrix(c(1,0.5,0.5,1), nrow = p, ncol = p)
 //' cov_col = matrix(c(3,2,1,2,3,2,1,2,3), nrow = q, ncol = q)
-//' X <- rmatnorm(n = 1000, mu, cov_row, cov_col)
+//' X <- rmatnorm(n = n, mu, cov_row, cov_col)
 //' ind <- sample(1:n, 0.3*n)
 //' X[,,ind] <- rmatnorm(n = length(ind), matrix(rep(10, p*q), nrow = p, ncol = q), cov_row, cov_col)
 //' par_mmle <- mmle(X)
@@ -608,13 +606,13 @@ Rcpp::List mmcd(const arma::cube& X,
   int nn; // size of subpopulation
   arma::uvec sub_population; // vector for subpopulation
 
-  // variables to store the results of the first initialization
+  // variables to store the results of first initialization
   vector<arma::uvec> subsets_first;
   vector<Cstep_res> csteps_init_first;
   arma::uvec best_iter_init_first;
   arma::vec dets_init_first;
 
-  // variables to store the results of the second initialization
+  // variables to store the results of second initialization
   vector<Cstep_res> csteps_init_second;
   arma::uvec best_iter_init_second;
   arma::vec dets_init_second;
@@ -654,8 +652,10 @@ Rcpp::List mmcd(const arma::cube& X,
 
   try{
     std::vector<unsigned int> seeds(nthreads);
-    #pragma omp parallel num_threads(nthreads)
-    #pragma omp for collapse(2)
+    #if defined(_OPENMP)
+      #pragma omp parallel num_threads(nthreads)
+      #pragma omp for collapse(2)
+    #endif
     for (int i = 0; i < n_subsets; i++){
       for (int j = 0; j < n_samp_init; j++){
         csteps_init_first[i * n_samp_init + j] = cstepCpp(X.slices(subsets_first[i]),       // X (data)
@@ -679,14 +679,16 @@ Rcpp::List mmcd(const arma::cube& X,
   }
 
   ////////////////////////////////////////////////////////////////////////
-  // Second initialization on a subpopulation of a size of up to 1500
+  // Second initialization on subpopulation of a size of up to 1500
   ////////////////////////////////////////////////////////////////////////
   csteps_init_second.resize(best_iter_init_first.size());
   dets_init_second.zeros(best_iter_init_first.size());
 
   try{
-    #pragma omp parallel num_threads(nthreads)
-    #pragma omp for
+    #if defined(_OPENMP)
+      #pragma omp parallel num_threads(nthreads)
+      #pragma omp for
+    #endif
     for (int i = 0; i < (int)best_iter_init_first.size(); i++){
       arma::uvec h_subset_init_second;
       if(n > 600){
@@ -725,8 +727,10 @@ Rcpp::List mmcd(const arma::cube& X,
   iterations.zeros(best_iter_init_second.size());
 
   try{
-    #pragma omp parallel num_threads(nthreads)
-    #pragma omp for
+    #if defined(_OPENMP)
+      #pragma omp parallel num_threads(nthreads)
+      #pragma omp for
+    #endif
     for (int i = 0; i < (int)best_iter_init_second.size(); i++){
       arma::uvec h_subset_init_final;
       if(n > 600){
@@ -765,7 +769,7 @@ Rcpp::List mmcd(const arma::cube& X,
   } else if(scale_consistency.compare("mmd_med") == 0){
     scale_factor = median(MDs)/R::qchisq(0.5, p*q, true, false);
   }
-  est.cov_row *= scale_factor; // multiply cov_row (not cov_col) since we need to scale the Kronecker product [Omega (x) Sigma]
+  est.cov_row *= scale_factor; //just multiply cov_row (not cov_col) since we need to scale the Kronecker product [Omega (x) Sigma]
   est.cov_row_inv /= scale_factor;
   MDs /= scale_factor;
 
@@ -775,7 +779,7 @@ Rcpp::List mmcd(const arma::cube& X,
   if(reweight){
     h_subset_reweighted = find(MDs < R::qchisq(outlier_quant, p*q, true, false));
 
-    //Ensure that the reweighted estimator has positive weights for at least as many observations as the h-subsets contain.
+    // ensure that the reweighted estimator has positive weights for at least as many observations as are contained in the h-subsets.
     if(h_subset_reweighted.size() >= csteps[best_i].h_subset.size()){
       MLE_res MLE = mmleCpp(X.slices(h_subset_reweighted), max_iter_MLE, lambda, true);
       est = MLE.est;
@@ -788,7 +792,7 @@ Rcpp::List mmcd(const arma::cube& X,
       } else if(scale_consistency.compare("mmd_med") == 0){
         scale_factor_reweighted = median(MDs)/R::qchisq(0.5, p*q, true, false);
       }
-      est.cov_row *= scale_factor_reweighted; //multiply cov_row (not cov_col) since we need to scale the Kronecker product [Omega (x) Sigma]
+      est.cov_row *= scale_factor_reweighted; //just multiply cov_row (not cov_col) since we need to scale the Kronecker product [Omega (x) Sigma]
       est.cov_row_inv /= scale_factor_reweighted;
       MDs_reweighted /= scale_factor_reweighted;
     } else{

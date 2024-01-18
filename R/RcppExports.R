@@ -13,15 +13,15 @@ KroneckerNorm <- function(A, B, C, D) {
     .Call(`_robustmatrix_KroneckerNorm`, A, B, C, D)
 }
 
-#' Maximum Likelihood Estimation for Matrix Normal Distribution
+#' Maximum Likelihood Estimation for Matrix Normal Distribtuion
 #'
 #' \code{mmle} computes the Maximum Likelihood Estimators (MLEs) for the matrix normal distribution
 #' using the iterative flip-flop algorithm \insertCite{Dutilleul1999}{robustmatrix}.
 #'
 #' @param X a 3d array of dimension \eqn{(p,q,n)}, containing \eqn{n} matrix-variate samples of \eqn{p} rows and \eqn{q} columns in each slice.
 #' @param max_iter upper limit of iterations.
-#' @param lambda is a smoothing parameter for the rowwise and columnwise covariance matrices.
-#' @param silent Logical. If FALSE (default), warnings and errors are printed.
+#' @param lambda a smooting parameter for the rowwise and columnwise covariance matrices.
+#' @param silent Logical. If FALSE (default) warnings and errors are printed.
 #'
 #' @return A list containing the following:
 #' \item{\code{mu}}{Estimated \eqn{p \times q} mean matrix.}
@@ -29,7 +29,7 @@ KroneckerNorm <- function(A, B, C, D) {
 #' \item{\code{cov_col}}{Estimated \eqn{q} times \eqn{q} columnwise covariance matrix.}
 #' \item{\code{cov_row_inv}}{Inverse of \code{cov_row}.}
 #' \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
-#' \item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in the final iteration.}
+#' \item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in final iteration.}
 #' \item{\code{iterations}}{Number of iterations of the mmle procedure.}
 #'
 #' @references
@@ -62,8 +62,8 @@ TensorMMD <- function(X, mu, cov_row, cov_col, inverted = FALSE) {
 #'
 #' This function is part of the FastMMCD algorithm \insertCite{mayrhofer2024}{robustmatrix}.
 #'
-#' @param h_init Integer. Size of initial h-subset. If smaller than 0 (default), the size is chosen automatically.
-#' @param init Logical. If TRUE (default), elemental subsets are used to initialize the procedure.
+#' @param h_init Integer. Size of initial h-subset. If smaller than 0 (default) size is chosen automatically.
+#' @param init Logical. If TRUE (default) elemental subsets are used to initialize the procedure.
 #' @param max_iter upper limit of C-step iterations (default is 100)
 #' @inheritParams mmcd
 #'
@@ -75,7 +75,7 @@ TensorMMD <- function(X, mu, cov_row, cov_col, inverted = FALSE) {
 #' \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
 #' \item{\code{md}}{Squared Mahalanobis distances.}
 #' \item{\code{md_raw}}{Squared Mahalanobis distances based on \emph{raw} MMCD estimators.}
-#' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariance).}
+#' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariane).}
 #' \item{\code{dets}}{Objective values for the final h-subsets.}
 #' \item{\code{h_subset}}{Final h-subset of \emph{raw} MMCD estimators.}
 #' \item{\code{iterations}}{Number of C-steps.}
@@ -114,13 +114,13 @@ cstep <- function(X, alpha = 0.5, h_init = -1L, init = TRUE, max_iter = 100L, ma
 #' @param max_iter_MLE upper limit of MLE iterations (default is 100)
 #' @param max_iter_cstep_init upper limit of C-step iterations for initial h-subsets (default is 2)
 #' @param max_iter_MLE_init upper limit of MLE iterations for initial h-subsets (default is 2)
-#' @param adapt_alpha Logical. If TRUE (default), alpha is adapted to consider the dimension of the data.
-#' @param reweight Logical. If TRUE (default), the reweighted MMCD estimators are computed.
+#' @param adapt_alpha Logical. If TRUE (default) alpha is adapted to take the dimension of the data into account.
+#' @param reweight Logical. If TRUE (default) the reweighted MMCD estimators are computed.
 #' @param scale_consistency Character. Either "quant" (default) or "mmd_med". If "quant", the consistency factor is chosen to achieve consistency under the matrix normal distribution.
 #' If "mmd_med", the consistency factor is chosen based on the Mahalanobis distances of the observations.
-#' @param outlier_quant numeric parameter between 0 and 1, specifying the Chi-square quantile used in the reweighting step.
+#' @param outlier_quant numeric parameter between 0 and 1. Chi-square quantile used in the reweighting step.
 #' @param nthreads Integer. If 1 (default), all computations are carried out sequentially.
-#' If larger than 1, C-steps are carried out in parallel using \code{nthreads} threads.
+#' If larger then 1, C-steps are carried out in parallel using \code{nthreads} threads.
 #' If < 0, all possible threads are used.
 #' @inheritParams mmle
 #'
@@ -132,7 +132,7 @@ cstep <- function(X, alpha = 0.5, h_init = -1L, init = TRUE, max_iter = 100L, ma
 #' \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
 #' \item{\code{md}}{Squared Mahalanobis distances.}
 #' \item{\code{md_raw}}{Squared Mahalanobis distances based on \emph{raw} MMCD estimators.}
-#' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariance).}
+#' \item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariane).}
 #' \item{\code{alpha}}{The (adjusted) value of alpha used to determine the size of the h-subset.}
 #' \item{\code{consistency_factors}}{Consistency factors for raw and reweighted MMCD estimators.}
 #' \item{\code{dets}}{Objective values for the final h-subsets.}
@@ -148,7 +148,7 @@ cstep <- function(X, alpha = 0.5, h_init = -1L, init = TRUE, max_iter = 100L, ma
 #' \insertCite{Rousseeuw1985,Rousseeuw1999}{robustmatrix} to the matrix-variate setting.
 #' It looks for the \eqn{h} observations, \eqn{h = \alpha * n}, whose covariance matrix has the smallest determinant.
 #' The FastMMCD algorithm is used for computation and is described in detail in \insertCite{mayrhofer2024}{robustmatrix}.
-#' NOTE: The procedure depends on \emph{random} initial subsets. Setting a seed is only possible if \code{nthreads = 1}.
+#' NOTE: The procedure depends on \emph{random} initial subsets. Currently setting a seed is only possible if \code{nthreads = 1}.
 #'
 #' @references
 #' \insertAllCited{}
@@ -162,7 +162,7 @@ cstep <- function(X, alpha = 0.5, h_init = -1L, init = TRUE, max_iter = 100L, ma
 #' mu = matrix(rep(0, p*q), nrow = p, ncol = q)
 #' cov_row = matrix(c(1,0.5,0.5,1), nrow = p, ncol = p)
 #' cov_col = matrix(c(3,2,1,2,3,2,1,2,3), nrow = q, ncol = q)
-#' X <- rmatnorm(n = 1000, mu, cov_row, cov_col)
+#' X <- rmatnorm(n = n, mu, cov_row, cov_col)
 #' ind <- sample(1:n, 0.3*n)
 #' X[,,ind] <- rmatnorm(n = length(ind), matrix(rep(10, p*q), nrow = p, ncol = q), cov_row, cov_col)
 #' par_mmle <- mmle(X)

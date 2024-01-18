@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{mmle}
 \alias{mmle}
-\title{Maximum Likelihood Estimation for Matrix Normal Distribution}
+\title{Maximum Likelihood Estimation for Matrix Normal Distribtuion}
 \usage{
 mmle(X, max_iter = 100L, lambda = 0, silent = FALSE)
 }
@@ -11,9 +11,9 @@ mmle(X, max_iter = 100L, lambda = 0, silent = FALSE)
 
 \item{max_iter}{upper limit of iterations.}
 
-\item{lambda}{is a smoothing parameter for the rowwise and columnwise covariance matrices.}
+\item{lambda}{a smooting parameter for the rowwise and columnwise covariance matrices.}
 
-\item{silent}{Logical. If FALSE (default), warnings and errors are printed.}
+\item{silent}{Logical. If FALSE (default) warnings and errors are printed.}
 }
 \value{
 A list containing the following:
@@ -22,7 +22,7 @@ A list containing the following:
 \item{\code{cov_col}}{Estimated \eqn{q} times \eqn{q} columnwise covariance matrix.}
 \item{\code{cov_row_inv}}{Inverse of \code{cov_row}.}
 \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
-\item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in the final iteration.}
+\item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in final iteration.}
 \item{\code{iterations}}{Number of iterations of the mmle procedure.}
 }
 \description{

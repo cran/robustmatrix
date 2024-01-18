@@ -20,17 +20,17 @@ cstep(
 
 \item{alpha}{numeric parameter between 0.5 (default) and 1. Controls the size \eqn{h \approx alpha * n} of the h-subset over which the determinant is minimized.}
 
-\item{h_init}{Integer. Size of initial h-subset. If smaller than 0 (default), the size is chosen automatically.}
+\item{h_init}{Integer. Size of initial h-subset. If smaller than 0 (default) size is chosen automatically.}
 
-\item{init}{Logical. If TRUE (default), elemental subsets are used to initialize the procedure.}
+\item{init}{Logical. If TRUE (default) elemental subsets are used to initialize the procedure.}
 
 \item{max_iter}{upper limit of C-step iterations (default is 100)}
 
 \item{max_iter_MLE}{upper limit of MLE iterations (default is 100)}
 
-\item{lambda}{is a smoothing parameter for the rowwise and columnwise covariance matrices.}
+\item{lambda}{a smooting parameter for the rowwise and columnwise covariance matrices.}
 
-\item{adapt_alpha}{Logical. If TRUE (default), alpha is adapted to consider the dimension of the data.}
+\item{adapt_alpha}{Logical. If TRUE (default) alpha is adapted to take the dimension of the data into account.}
 }
 \value{
 A list containing the following:
@@ -41,7 +41,7 @@ A list containing the following:
 \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
 \item{\code{md}}{Squared Mahalanobis distances.}
 \item{\code{md_raw}}{Squared Mahalanobis distances based on \emph{raw} MMCD estimators.}
-\item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariance).}
+\item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariane).}
 \item{\code{dets}}{Objective values for the final h-subsets.}
 \item{\code{h_subset}}{Final h-subset of \emph{raw} MMCD estimators.}
 \item{\code{iterations}}{Number of C-steps.}

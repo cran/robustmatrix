@@ -27,7 +27,7 @@ mmcd(
 
 \item{alpha}{numeric parameter between 0.5 (default) and 1. Controls the size \eqn{h \approx alpha * n} of the h-subset over which the determinant is minimized.}
 
-\item{lambda}{is a smoothing parameter for the rowwise and columnwise covariance matrices.}
+\item{lambda}{a smooting parameter for the rowwise and columnwise covariance matrices.}
 
 \item{max_iter_cstep}{upper limit of C-step iterations (default is 100)}
 
@@ -37,17 +37,17 @@ mmcd(
 
 \item{max_iter_MLE_init}{upper limit of MLE iterations for initial h-subsets (default is 2)}
 
-\item{adapt_alpha}{Logical. If TRUE (default), alpha is adapted to consider the dimension of the data.}
+\item{adapt_alpha}{Logical. If TRUE (default) alpha is adapted to take the dimension of the data into account.}
 
-\item{reweight}{Logical. If TRUE (default), the reweighted MMCD estimators are computed.}
+\item{reweight}{Logical. If TRUE (default) the reweighted MMCD estimators are computed.}
 
 \item{scale_consistency}{Character. Either "quant" (default) or "mmd_med". If "quant", the consistency factor is chosen to achieve consistency under the matrix normal distribution.
 If "mmd_med", the consistency factor is chosen based on the Mahalanobis distances of the observations.}
 
-\item{outlier_quant}{numeric parameter between 0 and 1, specifying the Chi-square quantile used in the reweighting step.}
+\item{outlier_quant}{numeric parameter between 0 and 1. Chi-square quantile used in the reweighting step.}
 
 \item{nthreads}{Integer. If 1 (default), all computations are carried out sequentially.
-If larger than 1, C-steps are carried out in parallel using \code{nthreads} threads.
+If larger then 1, C-steps are carried out in parallel using \code{nthreads} threads.
 If < 0, all possible threads are used.}
 }
 \value{
@@ -59,7 +59,7 @@ A list containing the following:
 \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
 \item{\code{md}}{Squared Mahalanobis distances.}
 \item{\code{md_raw}}{Squared Mahalanobis distances based on \emph{raw} MMCD estimators.}
-\item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariance).}
+\item{\code{det}}{Value of objective function (determinant of Kronecker product of rowwise and columnwise covariane).}
 \item{\code{alpha}}{The (adjusted) value of alpha used to determine the size of the h-subset.}
 \item{\code{consistency_factors}}{Consistency factors for raw and reweighted MMCD estimators.}
 \item{\code{dets}}{Objective values for the final h-subsets.}
@@ -80,14 +80,14 @@ The MMCD estimators generalize the well-known Minimum Covariance Determinant (MC
 \insertCite{Rousseeuw1985,Rousseeuw1999}{robustmatrix} to the matrix-variate setting.
 It looks for the \eqn{h} observations, \eqn{h = \alpha * n}, whose covariance matrix has the smallest determinant.
 The FastMMCD algorithm is used for computation and is described in detail in \insertCite{mayrhofer2024}{robustmatrix}.
-NOTE: The procedure depends on \emph{random} initial subsets. Setting a seed is only possible if \code{nthreads = 1}.
+NOTE: The procedure depends on \emph{random} initial subsets. Currently setting a seed is only possible if \code{nthreads = 1}.
 }
 \examples{
 n = 1000; p = 2; q = 3
 mu = matrix(rep(0, p*q), nrow = p, ncol = q)
 cov_row = matrix(c(1,0.5,0.5,1), nrow = p, ncol = p)
 cov_col = matrix(c(3,2,1,2,3,2,1,2,3), nrow = q, ncol = q)
-X <- rmatnorm(n = 1000, mu, cov_row, cov_col)
+X <- rmatnorm(n = n, mu, cov_row, cov_col)
 ind <- sample(1:n, 0.3*n)
 X[,,ind] <- rmatnorm(n = length(ind), matrix(rep(10, p*q), nrow = p, ncol = q), cov_row, cov_col)
 par_mmle <- mmle(X)

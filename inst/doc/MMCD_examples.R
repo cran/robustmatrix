@@ -1,10 +1,10 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 
-## ---- results='hide', message = FALSE, warning=FALSE--------------------------
+## ----results='hide', message = FALSE, warning=FALSE---------------------------
 library(robustmatrix)
 library(ggplot2)
 library(dplyr)
@@ -40,7 +40,7 @@ MD_rob <- as.numeric(mmd(X = X,
 out_quant <- qchisq(0.95, p*q)
 outliers <- which(MD_rob > out_quant)
 
-## ---- fig.dim = c(7,4)--------------------------------------------------------
+## ----fig.dim = c(7,4)---------------------------------------------------------
 names(MD_rob) <- dimnames(X)[[3]]
 subs <- MD_rob < out_quant
 plt_dd <- ggplot(data = NULL, aes(x = sqrt(MD), y = sqrt(MD_rob))) +
@@ -99,7 +99,7 @@ colnames(set) <- c("var",
                    "AP [hPa]")
 set_long <- set %>% pivot_longer(-c(var))
 
-## ---- message = FALSE, warning=FALSE------------------------------------------
+## ----message = FALSE, warning=FALSE-------------------------------------------
 shv_year <- apply(shv_cell, c(1,3),sum)
 X_center <- array(dim = dim(X), dimnames = dimnames(X))
 X_center[] <- (apply(X,3,function(x) x - par_MMCD$mu))
@@ -121,7 +121,7 @@ plt_data_years <- inner_join(shv_years_long,sign_years_long) %>%
          var = as.numeric(var),
          parameter = fct_recode(factor(parameter),!!! var_names))
 
-## ---- message = FALSE, warning=FALSE------------------------------------------
+## ----message = FALSE, warning=FALSE-------------------------------------------
 shv_long_1895 <- long_weather(data.frame(t(shv_cell[,,outliers[1]])), val_to = "shv", var_levels = dimnames(X)[[2]])
 X_long_1895 <- long_weather(data.frame(t(X[,,outliers[1]])) %>% mutate(SP = SP*100), val_to = "x", var_levels = dimnames(X)[[2]])
 sign_long_1895 <- long_weather(data.frame(t(sign(X[,,outliers[1]] - par_MMCD$mu))), val_to = "sign", var_levels = dimnames(X)[[2]])
@@ -140,7 +140,7 @@ plt_data_2022 <- inner_join(shv_long_2022,sign_long_2022) %>%
   inner_join(X_long_2022) %>%
   mutate(parameter = fct_recode(factor(parameter),!!! var_names))
 
-## ---- fig.dim = c(7,4), message = FALSE, warning=FALSE------------------------
+## ----fig.dim = c(7,4), message = FALSE, warning=FALSE-------------------------
 ggplot(plt_data_years, aes(x = var, y = parameter, fill = val)) +
   geom_tile(color = "lightgray") +
   theme_minimal() +
@@ -153,7 +153,7 @@ ggplot(plt_data_years, aes(x = var, y = parameter, fill = val)) +
   scale_alpha_manual(values = c(0,1)) +
   guides(alpha = FALSE, fill = FALSE)
 
-## ---- fig.dim = c(7,4), message = FALSE, warning=FALSE------------------------
+## ----fig.dim = c(7,4), message = FALSE, warning=FALSE-------------------------
 gridExtra::grid.arrange(ggplot(plt_data_1895, aes(x = var, y = parameter, fill = val, label = round(x))) +
                           geom_tile(color = "lightgray") +
                           theme_minimal() +
@@ -197,7 +197,7 @@ par_mmle <- robustmatrix::mmle(X_H)
 par_mmcd <- robustmatrix::mmcd(X_H, nsamp = 500, alpha = 0.5, 
                                nthreads = 1, scale_consistency = "quant")
 
-## ---- fig.dim = c(7,4)--------------------------------------------------------
+## ----fig.dim = c(7,4)---------------------------------------------------------
 plt_data <-   data.frame(patient_id = 1:dim(darwin_array_clean)[[3]], 
                          class = c(rep("AD", length(sub_P)),
                                    rep("H", length(sub_H))),
@@ -214,7 +214,7 @@ p_mmd <- ggplot(data = plt_data,
   facet_grid(~ class, scales = "free")
 p_mmd
 
-## ---- message = FALSE, warning=FALSE------------------------------------------
+## ----message = FALSE, warning=FALSE-------------------------------------------
 shv_cell_P <- array(dim = dim(X_P), dimnames = dimnames(X_P))
 shv_cell_P[] <- matrixShapley(X_P, 
                               mu = par_mmcd$mu, 
@@ -254,7 +254,7 @@ fct_order <- order(shv_row_mean_P_prop$val)
 shv_row_mean_prop <- shv_row_mean_prop %>%
   mutate(rowname = factor(rowname, levels = shv_row_mean_P_prop$rowname[fct_order]))
 
-## ---- fig.dim = c(7,4)--------------------------------------------------------
+## ----fig.dim = c(7,4)---------------------------------------------------------
 p_shv_features <- ggplot(data = shv_row_mean_prop, 
                          aes(x = val, y = rowname, fill = class)) + 
   geom_bar(stat = "identity", position=position_dodge(), color = "black") + 
@@ -265,7 +265,7 @@ p_shv_features <- ggplot(data = shv_row_mean_prop,
   theme(legend.position = c(0.95,0.5))
 p_shv_features
 
-## ---- eval=FALSE--------------------------------------------------------------
+## ----eval=FALSE---------------------------------------------------------------
 #  # Loading the data
 #  load(url("https://wis.kuleuven.be/stat/robust/Programs/DO/do-video-data-rdata"))
 #  
