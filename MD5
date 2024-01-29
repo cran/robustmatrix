@@ -1,4 +1,4 @@
-ca881699d9fa5289a04526953f0e0d87 *DESCRIPTION
+33e09e1a65165707a6b2a4534ec1fd3e *DESCRIPTION
 307f111422d347bc99265bec7e3e1357 *NAMESPACE
 e7172054dc228bf525d0cfa84a457774 *R/RcppExports.R
 578a5d687009daeba0c13f9b484c5731 *R/data.R
@@ -8,7 +8,7 @@ c53627f555b04603ede3f6d62efd62c9 *R/misc.R
 d334baa5909b03f53e607ca31d8410ea *R/mmd.R
 38fe8bba7a50c77417ae7df470f1e181 *R/rmatnorm.R
 f6dddf48380f08cdfcfeb31bc12e1033 *R/robustmatrix-package.R
-53d322dce3232338b6c9d3a1a63dc75a *build/partial.rdb
+07e130521f6a5136760d098f31aba68a *build/partial.rdb
 de8c0e63c54823478ccfe4fcad7783f9 *build/vignette.rds
 ff1c29e23c59a1bd51a636f28e4cd27b *data/darwin.rda
 55985051fd5604dfa2c2488761d30b96 *data/weather.rda
@@ -29,6 +29,6 @@ dadbbd7807807cd66814db840986f606 *man/weather.Rd
 e62585629948e7dd143efbad43c2a6eb *src/Makevars
 e62585629948e7dd143efbad43c2a6eb *src/Makevars.win
 6898ef5ff8b3ee2a17125d0ca38c9f39 *src/RcppExports.cpp
-b48c3359c323e97a7aa8c1682fb07c84 *src/functions.cpp
+59560742fe2a0cb33f11eb8ffacb3555 *src/functions.cpp
 2950d8e59ca018b7632ef0a21c00fc23 *src/robustmatrix-package.cpp
 01d0e58f92371b5fb84e6a790b36aac3 *vignettes/MMCD_examples.Rmd
