@@ -62,7 +62,8 @@ arma::mat MLErow(const arma::cube& X_std, const arma::mat& cov_col_inv) {
   for (int i = 0; i < n; i++){
     cov_row += X_std.slice(i) * cov_col_inv * X_std.slice(i).t();
   }
-  cov_row /= (n * q);
+  // cov_row /= (n * q);
+  cov_row = symmatu(cov_row/(n * q));
   return(cov_row);
 }
 
@@ -76,7 +77,8 @@ arma::mat MLEcol(const arma::cube& X_std, const arma::mat& cov_row_inv) {
   for (int i = 0; i < n; i++){
     cov_col += X_std.slice(i).t() * cov_row_inv * X_std.slice(i);
   }
-  cov_col /= (n * p);
+  // cov_col /= (n * p);
+  cov_col = symmatu(cov_col/(n * p));
   return(cov_col);
 }
 
@@ -162,8 +164,37 @@ MLE_res mmleCpp(const arma::cube& X,
     conv_crit = norm > 0.001 && i < max_iter;
     i++;
   }
-  cov_row_inv /= scale_factor;
-  cov_col_inv *= scale_factor;
+  bool flag_cov_row_inv = inv_sympd(cov_row_inv, cov_row);
+  if(!flag_cov_row_inv){
+    stop("Matrix 'cov_row' is singular");
+  }
+  bool flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
+  if(!flag_cov_col_inv){
+    stop("Matrix 'cov_col' is singular");
+  }
+
+  // bool flag_cov_row_inv = true;
+  // if(cov_row.is_symmetric()){
+  //   flag_cov_row_inv = inv_sympd(cov_row_inv, cov_row);
+  // } else{
+  //   flag_cov_row_inv = inv(cov_row_inv, cov_row);
+  // }
+  //
+  // if(!flag_cov_row_inv){
+  //   stop("Matrix 'cov_row' is singular");
+  // }
+  //
+  // bool flag_cov_col_inv = true;
+  // if(cov_col.is_symmetric()){
+  //   flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
+  // } else{
+  //   flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
+  // }
+  // if(!flag_cov_col_inv){
+  //   stop("Matrix 'cov_col' is singular");
+  // }
+  //cov_row_inv /= scale_factor;
+  //cov_col_inv *= scale_factor;
 
   MLE_res res;
   res.est.mu = mu;

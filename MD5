@@ -1,4 +1,4 @@
-33e09e1a65165707a6b2a4534ec1fd3e *DESCRIPTION
+902e1c231ee40a669466e785a301dbb3 *DESCRIPTION
 307f111422d347bc99265bec7e3e1357 *NAMESPACE
 e7172054dc228bf525d0cfa84a457774 *R/RcppExports.R
 578a5d687009daeba0c13f9b484c5731 *R/data.R
@@ -8,14 +8,15 @@ c53627f555b04603ede3f6d62efd62c9 *R/misc.R
 d334baa5909b03f53e607ca31d8410ea *R/mmd.R
 38fe8bba7a50c77417ae7df470f1e181 *R/rmatnorm.R
 f6dddf48380f08cdfcfeb31bc12e1033 *R/robustmatrix-package.R
-07e130521f6a5136760d098f31aba68a *build/partial.rdb
-de8c0e63c54823478ccfe4fcad7783f9 *build/vignette.rds
+9ea8e762e79e64a47dec2169fa2a8666 *build/partial.rdb
+924b8e5678603861ec339411c2cec343 *build/vignette.rds
 ff1c29e23c59a1bd51a636f28e4cd27b *data/darwin.rda
 55985051fd5604dfa2c2488761d30b96 *data/weather.rda
-0163a71092633accd08409848590e63b *inst/REFERENCES.bib
+1bf1d84c18f96c6ce3dd4b83e3f456df *inst/CITATION
+557b7b092b8199161eeffe3239211c9a *inst/REFERENCES.bib
 3d0e98458df9645ab9396c757da57fe4 *inst/doc/MMCD_examples.R
 01d0e58f92371b5fb84e6a790b36aac3 *inst/doc/MMCD_examples.Rmd
-e40283a3812c37eaeb1e9d3d39c2f73d *inst/doc/MMCD_examples.html
+66c705db48ca933921c90a7d70c68f98 *inst/doc/MMCD_examples.html
 f90b20c91e004d2d1218649cc21cf815 *man/clean_prob_mmcd.Rd
 186019667aa119265fead5bdfaf23f62 *man/cstep.Rd
 1bf5a90771b5e5fc5286cb500def4d1b *man/darwin.Rd
@@ -29,6 +30,6 @@ dadbbd7807807cd66814db840986f606 *man/weather.Rd
 e62585629948e7dd143efbad43c2a6eb *src/Makevars
 e62585629948e7dd143efbad43c2a6eb *src/Makevars.win
 6898ef5ff8b3ee2a17125d0ca38c9f39 *src/RcppExports.cpp
-59560742fe2a0cb33f11eb8ffacb3555 *src/functions.cpp
+2679cce6bc2cd0169230d031c29b37a0 *src/functions.cpp
 2950d8e59ca018b7632ef0a21c00fc23 *src/robustmatrix-package.cpp
 01d0e58f92371b5fb84e6a790b36aac3 *vignettes/MMCD_examples.Rmd
