@@ -4,16 +4,35 @@
 \alias{mmle}
 \title{Maximum Likelihood Estimation for Matrix Normal Distribtuion}
 \usage{
-mmle(X, max_iter = 100L, lambda = 0, silent = FALSE)
+mmle(
+  X,
+  cov_row_init = NULL,
+  cov_col_init = NULL,
+  diag = "none",
+  max_iter = 100L,
+  lambda = 0,
+  silent = FALSE,
+  nthreads = 1L
+)
 }
 \arguments{
 \item{X}{a 3d array of dimension \eqn{(p,q,n)}, containing \eqn{n} matrix-variate samples of \eqn{p} rows and \eqn{q} columns in each slice.}
+
+\item{cov_row_init}{matrix. Initial \code{cov_row} \eqn{p \times p} matrix. Identity by default.}
+
+\item{cov_col_init}{matrix. Initial \code{cov_col} \eqn{p \times p} matrix. Identity by default.}
+
+\item{diag}{Character. If "none" (default) all entries of \code{cov_row} and \code{cov_col} are estimated. If either "both", "row", or "col" only the diagonal entries of the respective matrices are estimated.}
 
 \item{max_iter}{upper limit of iterations.}
 
 \item{lambda}{a smooting parameter for the rowwise and columnwise covariance matrices.}
 
 \item{silent}{Logical. If FALSE (default) warnings and errors are printed.}
+
+\item{nthreads}{Integer. If 1 (default), all computations are carried out sequentially.
+If larger then 1, matrix multiplication in the flip-flop algorithm is carried out in parallel using \code{nthreads} threads. Be aware of the overhead of parallelization for small matrices and or small sample sizes.
+If < 0, all possible threads are used.}
 }
 \value{
 A list containing the following:
@@ -22,7 +41,7 @@ A list containing the following:
 \item{\code{cov_col}}{Estimated \eqn{q} times \eqn{q} columnwise covariance matrix.}
 \item{\code{cov_row_inv}}{Inverse of \code{cov_row}.}
 \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
-\item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in final iteration.}
+\item{\code{norm}}{Frobenius norm of squared differences between covariance matrices in final iteration.}
 \item{\code{iterations}}{Number of iterations of the mmle procedure.}
 }
 \description{

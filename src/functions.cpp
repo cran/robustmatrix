@@ -4,9 +4,13 @@
 #include <thread>
 #include <iostream>
 
+#pragma omp declare reduction( + : arma::mat : omp_out += omp_in ) \
+initializer( omp_priv = omp_orig )
+
 using namespace std;
 using namespace Rcpp;
 using namespace arma;
+
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins(openmp)]]
 
@@ -52,40 +56,87 @@ class Cstep_res {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 // [[Rcpp::export]]
-arma::mat MLErow(const arma::cube& X_std, const arma::mat& cov_col_inv) {
-  // const int nthreads = std::thread::hardware_concurrency();
+arma::mat MLErow(const arma::cube& X_std, const arma::mat& cov_col_inv, const bool diag = false, int nthreads = 1) {
+  if(nthreads < 0){
+    nthreads = std::thread::hardware_concurrency();
+  }
   const int n = X_std.n_slices;
   const int p = X_std.n_rows;
   const int q = X_std.n_cols;
 
   arma::mat cov_row = arma::zeros(p,p);
-  for (int i = 0; i < n; i++){
-    cov_row += X_std.slice(i) * cov_col_inv * X_std.slice(i).t();
+  if(diag){
+    #if defined(_OPENMP)
+      #pragma omp parallel num_threads(nthreads)
+      #pragma omp for schedule(static) reduction(+:cov_row)
+    #endif
+    for (int i = 0; i < n; i++){
+      cov_row += diagmat(X_std.slice(i) * cov_col_inv * X_std.slice(i).t());
+    }
+    cov_row = diagmat(cov_row/(n * q));
+  } else{
+    arma::mat cov_col_inv_chol_lower = chol(cov_col_inv, "lower");
+    #if defined(_OPENMP)
+      #pragma omp parallel num_threads(nthreads)
+      #pragma omp for schedule(static) reduction(+:cov_row)
+    #endif
+    for (int i = 0; i < n; i++){
+      arma::mat cov_row_tmp = X_std.slice(i) * cov_col_inv_chol_lower;
+      cov_row += cov_row_tmp * cov_row_tmp.t();
+    }
+    cov_row = symmatu(cov_row/(n * q));
   }
-  // cov_row /= (n * q);
-  cov_row = symmatu(cov_row/(n * q));
   return(cov_row);
 }
 
 // [[Rcpp::export]]
-arma::mat MLEcol(const arma::cube& X_std, const arma::mat& cov_row_inv) {
+arma::mat MLEcol(const arma::cube& X_std, const arma::mat& cov_row_inv, const bool diag = false, int nthreads = 1) {
+  if(nthreads < 0){
+    nthreads = std::thread::hardware_concurrency();
+  }
   const int n = X_std.n_slices;
   const int p = X_std.n_rows;
   const int q = X_std.n_cols;
 
   arma::mat cov_col = arma::zeros(q,q);
-  for (int i = 0; i < n; i++){
-    cov_col += X_std.slice(i).t() * cov_row_inv * X_std.slice(i);
+  if(diag){
+    #if defined(_OPENMP)
+      #pragma omp parallel num_threads(nthreads)
+      #pragma omp for schedule(static) reduction(+:cov_col)
+    #endif
+    for (int i = 0; i < n; i++){
+      cov_col += diagmat(X_std.slice(i).t() * cov_row_inv * X_std.slice(i));
+    }
+    cov_col = diagmat(cov_col/(n * p));
+  } else{
+    arma::mat cov_row_inv_chol_upper = chol(cov_row_inv, "upper");
+    #if defined(_OPENMP)
+      #pragma omp parallel num_threads(nthreads)
+      #pragma omp for schedule(static) reduction(+:cov_col)
+    #endif
+    for (int i = 0; i < n; i++){
+      arma::mat cov_col_tmp = cov_row_inv_chol_upper * X_std.slice(i);
+      cov_col += cov_col_tmp.t() * cov_col_tmp;
+    }
+    cov_col = symmatu(cov_col/(n * p));
   }
-  // cov_col /= (n * p);
-  cov_col = symmatu(cov_col/(n * p));
+
   return(cov_col);
 }
 
 
 // [[Rcpp::export]]
-double KroneckerNorm(arma::mat A, arma::mat B, arma::mat C, arma::mat D){
-  double norm = trace(A * A) * trace(B * B) - 2*trace(A * C)*trace(B * D) + trace(C * C) * trace(D * D);
+double KroneckerNorm(arma::mat A, arma::mat B, arma::mat C, arma::mat D, const bool diag_row = false, const bool diag_col = false){
+  double norm = 0;
+  if(diag_row && diag_col){
+    norm = sum(square(diagvec(A))) * sum(square(diagvec(B)))  - 2*dot(diagvec(A),diagvec(C))*dot(diagvec(B),diagvec(D)) + sum(square(diagvec(C))) * sum(square(diagvec(D)));
+  } else if(diag_row){
+    norm = sum(square(diagvec(A))) * trace(B * B) - 2*dot(diagvec(A),diagvec(C))*trace(B * D) + sum(square(diagvec(C))) * trace(D * D);
+  } else if(diag_col){
+    norm = trace(A * A) * sum(square(diagvec(B))) - 2*trace(A * C)*dot(diagvec(B),diagvec(D)) + trace(C * C) * sum(square(diagvec(D)));
+  } else{
+    norm = trace(A * A) * trace(B * B) - 2*trace(A * C)*trace(B * D) + trace(C * C) * trace(D * D);
+  }
   return(norm);
 }
 
@@ -94,12 +145,30 @@ double KroneckerNorm(arma::mat A, arma::mat B, arma::mat C, arma::mat D){
 ///////////////////////////////////////////////////////////////////////////////////////
 
 MLE_res mmleCpp(const arma::cube& X,
+                const Rcpp::Nullable<arma::mat> cov_row_init = NULL,
+                const Rcpp::Nullable<arma::mat> cov_col_init = NULL,
+                const std::string diag = "none",
                 const int max_iter = 100,
                 const double lambda = 0,
-                const bool silent = false){
+                const bool silent = false,
+                int nthreads = 1){
   const int n = X.n_slices;
   const int p = X.n_rows;
   const int q = X.n_cols;
+
+  bool diag_row = false;
+  bool diag_col = false;
+
+  if(diag == "both"){
+    diag_row = true;
+    diag_col = true;
+  } else if(diag == "row") {
+    diag_row = true;
+  } else if(diag == "col"){
+    diag_col = true;
+  } else if(diag != "none" && ! silent){
+    warning("diag must be either 'none' (default), 'row', 'col', or 'both', other values are repaced by the default.");
+  }
 
   const float pDq = (float)p/(float)q;
   const float qDp = (float)q/(float)p;
@@ -114,6 +183,7 @@ MLE_res mmleCpp(const arma::cube& X,
       stop("Only n = " + std::to_string((int)n) + " samples provided while at least "+ std::to_string((int)minimal_n) + " = ceil(max(p/q + q/p)) + 1) are requiered");
     }
   }
+
   // calculate mean
   arma::mat mu = mean(X, 2);
 
@@ -121,36 +191,56 @@ MLE_res mmleCpp(const arma::cube& X,
   const arma::cube X_std = X.each_slice() - mu;
 
   // initialize rowwise and columnwise covariance
-  arma::mat cov_row(p, p, arma::fill::eye);
-  arma::mat cov_col(q, q, arma::fill::eye);
+  arma::mat cov_row;
+  arma::mat cov_col;
+  if(cov_row_init.isNull()){
+    cov_row = eye(p, p);
+  } else{
+    cov_row = as<arma::mat>(cov_row_init);
+  }
+  if(cov_col_init.isNull()){
+    cov_col = eye(q, q);
+  } else{
+    cov_col = as<arma::mat>(cov_col_init);
+  }
+
   // initialize rowwise and columnwise covariance inverse
   arma::mat cov_row_inv;
   arma::mat cov_col_inv;
 
   bool conv_crit = true;
-  double norm;
+  double norm = 0;
   double scale_factor;
-
   int i = 0;
   while(conv_crit){
     arma::mat cov_row_old = cov_row;
     arma::mat cov_col_old = cov_col;
 
-    bool flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
-    if(!flag_cov_col_inv){
-      stop("Matrix 'cov_col' is singular");
+    if(diag_col){
+      cov_col_inv = diagmat(1/cov_col.diag());
+    } else{
+      bool flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
+      if(!flag_cov_col_inv){
+        stop("Matrix 'cov_col' is singular");
+      }
     }
-    cov_row = MLErow(X_std, cov_col_inv);
+
+    cov_row = MLErow(X_std, cov_col_inv, diag_row, nthreads);
 
     if(lambda != 0){
       cov_row = eye(p, p)*lambda + (1 - lambda)*cov_row;
     }
 
-    bool flag_cov_row_inv = inv_sympd(cov_row_inv, cov_row);
-    if(!flag_cov_row_inv){
-      stop("Matrix 'cov_row' is singular");
+    if(diag_row){
+      cov_row_inv = diagmat(1/cov_row.diag());
+    } else{
+      bool flag_cov_row_inv = inv_sympd(cov_row_inv, cov_row);
+      if(!flag_cov_row_inv){
+        stop("Matrix 'cov_row' is singular");
+      }
     }
-    cov_col = MLEcol(X_std, cov_row_inv);
+
+    cov_col = MLEcol(X_std, cov_row_inv, diag_col, nthreads);
 
     if(lambda != 0){
       cov_col = eye(q, q)*lambda + (1 - lambda)*cov_col;
@@ -160,41 +250,27 @@ MLE_res mmleCpp(const arma::cube& X,
     cov_row *= scale_factor;
     cov_col /= scale_factor;
 
-    norm = KroneckerNorm(cov_row_old, cov_col_old, cov_row, cov_col);
+    norm = KroneckerNorm(cov_row_old, cov_col_old, cov_row, cov_col, diag_row, diag_col);
     conv_crit = norm > 0.001 && i < max_iter;
     i++;
   }
-  bool flag_cov_row_inv = inv_sympd(cov_row_inv, cov_row);
-  if(!flag_cov_row_inv){
-    stop("Matrix 'cov_row' is singular");
-  }
-  bool flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
-  if(!flag_cov_col_inv){
-    stop("Matrix 'cov_col' is singular");
-  }
 
-  // bool flag_cov_row_inv = true;
-  // if(cov_row.is_symmetric()){
-  //   flag_cov_row_inv = inv_sympd(cov_row_inv, cov_row);
-  // } else{
-  //   flag_cov_row_inv = inv(cov_row_inv, cov_row);
-  // }
-  //
-  // if(!flag_cov_row_inv){
-  //   stop("Matrix 'cov_row' is singular");
-  // }
-  //
-  // bool flag_cov_col_inv = true;
-  // if(cov_col.is_symmetric()){
-  //   flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
-  // } else{
-  //   flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
-  // }
-  // if(!flag_cov_col_inv){
-  //   stop("Matrix 'cov_col' is singular");
-  // }
-  //cov_row_inv /= scale_factor;
-  //cov_col_inv *= scale_factor;
+  if(diag_col){
+    cov_col_inv = diagmat(1/cov_col.diag());
+  } else{
+    bool flag_cov_col_inv = inv_sympd(cov_col_inv, cov_col);
+    if(!flag_cov_col_inv){
+      stop("Matrix 'cov_col' is singular");
+    }
+  }
+  if(diag_row){
+    cov_row_inv = diagmat(1/cov_row.diag());
+  } else{
+    bool flag_cov_row_inv = inv_sympd(cov_row_inv, cov_row);
+    if(!flag_cov_row_inv){
+      stop("Matrix 'cov_row' is singular");
+    }
+  }
 
   MLE_res res;
   res.est.mu = mu;
@@ -205,7 +281,6 @@ MLE_res mmleCpp(const arma::cube& X,
   res.norm = norm;
   res.iterations = i;
 
-
   return(res);
 }
 
@@ -215,9 +290,15 @@ MLE_res mmleCpp(const arma::cube& X,
 //' using the iterative flip-flop algorithm \insertCite{Dutilleul1999}{robustmatrix}.
 //'
 //' @param X a 3d array of dimension \eqn{(p,q,n)}, containing \eqn{n} matrix-variate samples of \eqn{p} rows and \eqn{q} columns in each slice.
+//' @param cov_row_init matrix. Initial \code{cov_row} \eqn{p \times p} matrix. Identity by default.
+//' @param cov_col_init matrix. Initial \code{cov_col} \eqn{p \times p} matrix. Identity by default.
+//' @param diag Character. If "none" (default) all entries of \code{cov_row} and \code{cov_col} are estimated. If either "both", "row", or "col" only the diagonal entries of the respective matrices are estimated.
 //' @param max_iter upper limit of iterations.
 //' @param lambda a smooting parameter for the rowwise and columnwise covariance matrices.
 //' @param silent Logical. If FALSE (default) warnings and errors are printed.
+//' @param nthreads Integer. If 1 (default), all computations are carried out sequentially.
+//' If larger then 1, matrix multiplication in the flip-flop algorithm is carried out in parallel using \code{nthreads} threads. Be aware of the overhead of parallelization for small matrices and or small sample sizes.
+//' If < 0, all possible threads are used.
 //'
 //' @return A list containing the following:
 //' \item{\code{mu}}{Estimated \eqn{p \times q} mean matrix.}
@@ -225,7 +306,7 @@ MLE_res mmleCpp(const arma::cube& X,
 //' \item{\code{cov_col}}{Estimated \eqn{q} times \eqn{q} columnwise covariance matrix.}
 //' \item{\code{cov_row_inv}}{Inverse of \code{cov_row}.}
 //' \item{\code{cov_col_inv}}{Inverse of \code{cov_col}.}
-//' \item{\code{norm}}{Forbenius norm of squared differences between covariance matrices in final iteration.}
+//' \item{\code{norm}}{Frobenius norm of squared differences between covariance matrices in final iteration.}
 //' \item{\code{iterations}}{Number of iterations of the mmle procedure.}
 //'
 //' @references
@@ -244,10 +325,14 @@ MLE_res mmleCpp(const arma::cube& X,
 //' par_mmle <- mmle(X)
 // [[Rcpp::export]]
 Rcpp::List mmle(const arma::cube& X,
-                     const int max_iter = 100,
-                     const double lambda = 0,
-                     const bool silent = false){
-  MLE_res MLE = mmleCpp(X, max_iter, lambda, silent);
+                const Rcpp::Nullable<arma::mat> cov_row_init = R_NilValue,
+                const Rcpp::Nullable<arma::mat> cov_col_init = R_NilValue,
+                std::string diag = "none",
+                const int max_iter = 100,
+                const double lambda = 0,
+                const bool silent = false,
+                int nthreads = 1){
+  MLE_res MLE = mmleCpp(X, cov_row_init, cov_col_init, diag, max_iter, lambda, silent, nthreads);
   List res = List::create(Named("mu") = MLE.est.mu,
                           Named("cov_row") = MLE.est.cov_row,
                           Named("cov_col") = MLE.est.cov_col,
@@ -285,7 +370,11 @@ arma::vec TensorMMD(const arma::cube X,
                     arma::mat mu,
                     arma::mat cov_row,
                     arma::mat cov_col,
-                    const bool inverted = false) {
+                    const bool inverted = false,
+                    int nthreads = 1) {
+  if(nthreads < 0){
+    nthreads = std::thread::hardware_concurrency();
+  }
   int n = X.n_slices;
   arma::vec MDs;
   MDs.zeros(n);
@@ -304,8 +393,14 @@ arma::vec TensorMMD(const arma::cube X,
   const arma::cube X_std = X.each_slice() - mu;
 
   int i;
+  arma::mat cov_row_chol = chol(cov_row, "upper");
+  arma::mat cov_col_chol = chol(cov_col, "lower");
+  #if defined(_OPENMP)
+    #pragma omp parallel num_threads(nthreads)
+    #pragma omp for schedule(static)
+  #endif
   for (i = 0; i < n; i++){
-    MDs(i) =  trace(cov_col * X_std.slice(i).t() * cov_row * X_std.slice(i));
+    MDs(i) =  arma::accu(arma::square(cov_row_chol * X_std.slice(i) * cov_col_chol));
   }
 
   return(MDs);
@@ -313,6 +408,9 @@ arma::vec TensorMMD(const arma::cube X,
 
 Cstep_res cstepCpp(const arma::cube& X,
                    double alpha = 0.5,
+                   const Rcpp::Nullable<arma::mat> cov_row_init = NULL,
+                   const Rcpp::Nullable<arma::mat> cov_col_init = NULL,
+                   std::string diag = "none",
                    int h_init = -1,
                    bool init = true,
                    const int max_iter = 100,
@@ -366,7 +464,7 @@ Cstep_res cstepCpp(const arma::cube& X,
   dets.zeros(100);
 
   if(alpha == 1){
-    MLE_res MLE = mmleCpp(X, max_iter_MLE, lambda, true);
+    MLE_res MLE = mmleCpp(X, cov_row_init, cov_col_init, diag, max_iter_MLE, lambda, true, 1);
     est.mu = MLE.est.mu;
     est.cov_row = MLE.est.cov_row;
     est.cov_col = MLE.est.cov_col;
@@ -406,10 +504,10 @@ Cstep_res cstepCpp(const arma::cube& X,
       while(conv_crit && h_init < h){
         h_init += 1;
         try{
-          MLE_res MLE = mmleCpp(X.slices(h_init_subset), max_iter_MLE, lambda, true);
+          MLE_res MLE = mmleCpp(X.slices(h_init_subset), cov_row_init, cov_col_init, diag, max_iter_MLE, lambda, true, 1);
           conv_crit = false;
           est = MLE.est;
-          arma::vec MDs = TensorMMD(X, est.mu, est.cov_row_inv, est.cov_col_inv, true);
+          arma::vec MDs = TensorMMD(X, est.mu, est.cov_row_inv, est.cov_col_inv, true, 1);
           arma::uvec MD_order = sort_index(MDs);
           h_subset = MD_order.head(h);
         } catch(...){
@@ -423,7 +521,7 @@ Cstep_res cstepCpp(const arma::cube& X,
     ////////////////////////
     bool det_diff_crit = true;
     while(det_diff_crit && i < max_iter){
-      MLE_res MLE = mmleCpp(X.slices(h_subset), max_iter_MLE, lambda, true);
+      MLE_res MLE = mmleCpp(X.slices(h_subset), cov_row_init, cov_col_init, diag, max_iter_MLE, lambda, true, 1);
       est = MLE.est;
       arma::vec MDs = TensorMMD(X, est.mu, est.cov_row_inv, est.cov_col_inv, true);
       arma::uvec MD_order = sort_index(MDs);
@@ -495,15 +593,18 @@ Cstep_res cstepCpp(const arma::cube& X,
 //' abline(v = qchisq(0.99, p*q), lty = 2, col = "red")
 // [[Rcpp::export]]
 Rcpp::List cstep(const arma::cube& X,
-                       const double alpha = 0.5,
-                       int h_init = -1,
-                       bool init = true,
-                       const int max_iter = 100,
-                       const int max_iter_MLE = 100,
-                       const double lambda = 0,
-                       const bool adapt_alpha = true
+                const double alpha = 0.5,
+                const Rcpp::Nullable<arma::mat> cov_row_init = R_NilValue,
+                const Rcpp::Nullable<arma::mat> cov_col_init = R_NilValue,
+                std::string diag = "none",
+                int h_init = -1,
+                bool init = true,
+                const int max_iter = 100,
+                const int max_iter_MLE = 100,
+                const double lambda = 0,
+                const bool adapt_alpha = true
 ){
-  Cstep_res cstep = cstepCpp(X, alpha, h_init, init, max_iter, max_iter_MLE, lambda, adapt_alpha);
+  Cstep_res cstep = cstepCpp(X, alpha, cov_row_init, cov_col_init, diag, h_init, init, max_iter, max_iter_MLE, lambda, adapt_alpha);
   List res = List::create(Named("mu") = cstep.est.mu,
                           Named("cov_row") = cstep.est.cov_row,
                           Named("cov_col") = cstep.est.cov_col,
@@ -527,6 +628,8 @@ Rcpp::List cstep(const arma::cube& X,
 //' @param max_iter_MLE upper limit of MLE iterations (default is 100)
 //' @param max_iter_cstep_init upper limit of C-step iterations for initial h-subsets (default is 2)
 //' @param max_iter_MLE_init upper limit of MLE iterations for initial h-subsets (default is 2)
+//' @param nmini for \eqn{n > 2*nmini} the algorithm splits the data into smaller subsets with at least \code{nmini} samples for initialization (default is 300)
+//' @param nsub_pop for \eqn{n > 2*nmini} a subpopulation of \eqn{\min(n,nsub\_pop)} samples is divided into \eqn{k = floor(\min(n,nsub\_pop)/nmini)} subsets  for initialization (default is 1500)
 //' @param adapt_alpha Logical. If TRUE (default) alpha is adapted to take the dimension of the data into account.
 //' @param reweight Logical. If TRUE (default) the reweighted MMCD estimators are computed.
 //' @param scale_consistency Character. Either "quant" (default) or "mmd_med". If "quant", the consistency factor is chosen to achieve consistency under the matrix normal distribution.
@@ -589,11 +692,16 @@ Rcpp::List cstep(const arma::cube& X,
 Rcpp::List mmcd(const arma::cube& X,
                 const int nsamp = 500,
                 double alpha = 0.5,
+                const Rcpp::Nullable<arma::mat> cov_row_init = R_NilValue,
+                const Rcpp::Nullable<arma::mat> cov_col_init = R_NilValue,
+                std::string diag = "none",
                 const double lambda = 0,
                 const int max_iter_cstep = 100,
                 const int max_iter_MLE = 100,
                 const int max_iter_cstep_init = 2,
                 const int max_iter_MLE_init = 2,
+                const int nmini = 300,
+                const int nsub_pop = 1500,
                 const bool adapt_alpha = true,
                 const bool reweight = true,
                 const std::string scale_consistency = "quant",
@@ -655,10 +763,10 @@ Rcpp::List mmcd(const arma::cube& X,
 
   // Rcout << "Vector size after init = " << csteps_init_first.size();
   int n_subsets = 1;
-  if(n > 600){
-    nn = min(1500,n);
+  if(n > 2*nmini){
+    nn = min(nsub_pop,n);
     sub_population = arma::randperm(n,nn);
-    n_subsets = floor(nn/300);
+    n_subsets = floor(nn/(float)nmini);
     arma::uvec size_sub_populations = linspace<uvec>(0, nn-1, n_subsets + 1);
     for(int i = 0; i < n_subsets; i++){
       int first = size_sub_populations(i);
@@ -675,7 +783,7 @@ Rcpp::List mmcd(const arma::cube& X,
   }
 
   ////////////////////////////////////////////////////////////////////////
-  // First initialization on subsets (up to 5 subsets of size 300 to 600)
+  // First initialization on subsets (up to 5 subsets of size nmini to 2*nmini)
   ////////////////////////////////////////////////////////////////////////
   int n_samp_init = ceil((float)nsamp/(float)n_subsets);
   csteps_init_first.resize(n_samp_init*n_subsets);
@@ -691,6 +799,9 @@ Rcpp::List mmcd(const arma::cube& X,
       for (int j = 0; j < n_samp_init; j++){
         csteps_init_first[i * n_samp_init + j] = cstepCpp(X.slices(subsets_first[i]),       // X (data)
                                                           alpha,                            // alpha (percentage of samples in h_subset)
+                                                          cov_row_init,                     // initial cov_row
+                                                          cov_col_init,                     // initial cov_col
+                                                          diag,                           // matrices to diag
                                                           -1,                               // h_init (set to -1 to use elemental subsets)
                                                           true,                             // init (use initialization)
                                                           max_iter_cstep_init,              // max_iter
@@ -710,7 +821,7 @@ Rcpp::List mmcd(const arma::cube& X,
   }
 
   ////////////////////////////////////////////////////////////////////////
-  // Second initialization on subpopulation of a size of up to 1500
+  // Second initialization on subpopulation of a size of up to nsub_pop
   ////////////////////////////////////////////////////////////////////////
   csteps_init_second.resize(best_iter_init_first.size());
   dets_init_second.zeros(best_iter_init_first.size());
@@ -722,9 +833,9 @@ Rcpp::List mmcd(const arma::cube& X,
     #endif
     for (int i = 0; i < (int)best_iter_init_first.size(); i++){
       arma::uvec h_subset_init_second;
-      if(n > 600){
+      if(n > 2*nmini){
         int h_init_second = floor(alpha*(float)nn);
-        arma::vec MDs_init_second = TensorMMD(X.slices(sub_population), csteps_init_first[best_iter_init_first(i)].est.mu, csteps_init_first[best_iter_init_first(i)].est.cov_row_inv, csteps_init_first[best_iter_init_first(i)].est.cov_col_inv, true);
+        arma::vec MDs_init_second = TensorMMD(X.slices(sub_population), csteps_init_first[best_iter_init_first(i)].est.mu, csteps_init_first[best_iter_init_first(i)].est.cov_row_inv, csteps_init_first[best_iter_init_first(i)].est.cov_col_inv, true, 1);
         arma::uvec MD_order_init_second = sort_index(MDs_init_second);
         h_subset_init_second = MD_order_init_second.head(h_init_second);
       } else {
@@ -732,6 +843,9 @@ Rcpp::List mmcd(const arma::cube& X,
       }
       csteps_init_second[i] = cstepCpp(X.slices(sub_population),                            // X (data)
                                        alpha,                                               // alpha (percentage of samples in h_subset)
+                                       cov_row_init,                                        // initial cov_row
+                                       cov_col_init,                                        // initial cov_col
+                                       diag,                                              // matrices to diag
                                        -1,                                                  // h_init (will be ignored since we provide initial estimators in 'est')
                                        false,                                               // init (use initialization)
                                        max_iter_cstep_init,                                 // max_iter
@@ -764,8 +878,8 @@ Rcpp::List mmcd(const arma::cube& X,
     #endif
     for (int i = 0; i < (int)best_iter_init_second.size(); i++){
       arma::uvec h_subset_init_final;
-      if(n > 600){
-        arma::vec MDs_init_final = TensorMMD(X, csteps_init_second[best_iter_init_second(i)].est.mu, csteps_init_second[best_iter_init_second(i)].est.cov_row_inv, csteps_init_second[best_iter_init_second(i)].est.cov_col_inv, true);
+      if(n > 2*nmini){
+        arma::vec MDs_init_final = TensorMMD(X, csteps_init_second[best_iter_init_second(i)].est.mu, csteps_init_second[best_iter_init_second(i)].est.cov_row_inv, csteps_init_second[best_iter_init_second(i)].est.cov_col_inv, true, 1);
         arma::uvec MD_order_init_final = sort_index(MDs_init_final);
         h_subset_init_final = MD_order_init_final.head(h);
       } else {
@@ -773,6 +887,9 @@ Rcpp::List mmcd(const arma::cube& X,
       }
       csteps[i] = cstepCpp(X,                                                           // X (data)
                            alpha,                                                       // alpha (percentage of samples in h_subset)
+                           cov_row_init,                                                // initial cov_row
+                           cov_col_init,                                                // initial cov_col
+                           diag,                                                      // matrices to diag
                            -1,                                                          // h_init (will be ignored since we provide initial estimators in 'est')
                            false,                                                       // init (use initialization)
                            max_iter_cstep,                                              // max_iter
@@ -793,10 +910,10 @@ Rcpp::List mmcd(const arma::cube& X,
   Matrix_Est est = csteps[best_i].est;
 
   // scale for consistency in case of matrix normal distribution
-  arma::vec MDs = TensorMMD(X, est.mu, est.cov_row_inv, est.cov_col_inv, true);
+  arma::vec MDs = TensorMMD(X, est.mu, est.cov_row_inv, est.cov_col_inv, true, 1);
   double scale_factor = 1;
   if(scale_consistency.compare("quant") == 0){
-    scale_factor = alpha/R::pgamma(R::qchisq(alpha,p*q, true, false)/2, p*q/2 + 1, 1, true, false); //gamma distribution is the same as chi-square in this case
+    scale_factor = alpha/R::pgamma(R::qchisq(alpha,p*q, true, false)/2, (float)p*(float)q/2 + 1, 1, true, false); //gamma distribution is the same as chi-square in this case
   } else if(scale_consistency.compare("mmd_med") == 0){
     scale_factor = median(MDs)/R::qchisq(0.5, p*q, true, false);
   }
@@ -812,14 +929,14 @@ Rcpp::List mmcd(const arma::cube& X,
 
     // ensure that the reweighted estimator has positive weights for at least as many observations as are contained in the h-subsets.
     if(h_subset_reweighted.size() >= csteps[best_i].h_subset.size()){
-      MLE_res MLE = mmleCpp(X.slices(h_subset_reweighted), max_iter_MLE, lambda, true);
+      MLE_res MLE = mmleCpp(X.slices(h_subset_reweighted), cov_row_init, cov_col_init, diag, max_iter_MLE, lambda, true, 1);
       est = MLE.est;
 
       // scale for consistency AGAIN in case of matrix normal distribution
-      MDs_reweighted = TensorMMD(X, est.mu, est.cov_row_inv, est.cov_col_inv, true);
+      MDs_reweighted = TensorMMD(X, est.mu, est.cov_row_inv, est.cov_col_inv, true, 1);
       if(scale_consistency.compare("quant") == 0){
         double alpha1 = (float)h_subset_reweighted.size()/(float)n;
-        scale_factor_reweighted = alpha1/R::pgamma(R::qchisq(alpha1,p*q, true, false)/2, p*q/2 + 1, 1, true, false); //gamma distribution is the same as chi-square in this case
+        scale_factor_reweighted = alpha1/R::pgamma(R::qchisq(alpha1,p*q, true, false)/2, (float)p*(float)q/2 + 1, 1, true, false); //gamma distribution is the same as chi-square in this case
       } else if(scale_consistency.compare("mmd_med") == 0){
         scale_factor_reweighted = median(MDs)/R::qchisq(0.5, p*q, true, false);
       }

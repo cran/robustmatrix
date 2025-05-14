@@ -266,132 +266,132 @@ p_shv_features <- ggplot(data = shv_row_mean_prop,
 p_shv_features
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  # Loading the data
-#  load(url("https://wis.kuleuven.be/stat/robust/Programs/DO/do-video-data-rdata"))
-#  
-#  # Creating the overview plot
-#  ind_overview <- c(1,487,491,495,500)
-#  plts_overview <- list()
-#  for(i in seq_along(ind_overview)){
-#    dim_Video <- dim(Video)
-#    video_grid <- expand.grid("x" = 1:dim_Video[2], "y" = 1:dim_Video[3])
-#    video_long <- data.frame(cbind(video_grid,
-#                                   "r" = as.vector(Video[ind_overview[i],,,1]/255),
-#                                   "g" = as.vector(Video[ind_overview[i],,,2]/255),
-#                                   "b" = as.vector(Video[ind_overview[i],,,3]/255))) %>% mutate(rgb.val=rgb(r,g,b))
-#    plts_overview[[i]] <- ggplot(video_long, aes(y,x)) +
-#      geom_raster(aes(fill=rgb.val)) +
-#      scale_fill_identity() +
-#      theme_void()+
-#      coord_fixed() +
-#      theme(plot.title = element_text(hjust = 0.5),
-#            panel.grid.major = element_blank(),
-#            panel.grid.minor = element_blank(),
-#            panel.background = element_rect(fill = "transparent" ,colour = "black"),
-#            panel.ontop = TRUE,
-#            plot.margin = margin(1, 1, 1, 1, "pt")) +
-#      scale_x_continuous(expand = c(0,0)) +
-#      scale_y_continuous(expand = c(0,0), trans = "reverse") +
-#      labs(title = paste("Frame", ind_overview[i]))
-#  }
-#  video_overview <- do.call(gridExtra::grid.arrange, args = list("grobs" = plts_overview, "nrow" = 1))
-#  
-#  # Transform to grayscale image
-#  video_grayscale <- apply(Video, 1:3, mean)
-#  X <- aperm(video_grayscale,c(2,3,1))
-#  n <- dim(X)[3]
-#  p <- dim(X)[1]
-#  q <- dim(X)[2]
-#  
-#  # MMLE and MMCD parameter estimation
-#  par_MMLE <- mmle(X, lambda = 0)
-#  set.seed(1)
-#  par_MMCD <- mmcd(X, alpha = 0.5,lambda = 0, nsamp = 500, nthreads = 1)
-#  
-#  # Compute squared Mahlanobis distances
-#  MD <- mmd(X, mu = par_MMLE$mu, cov_row = par_MMLE$cov_row_inv,
-#            cov_col = par_MMLE$cov_col_inv, inverted = TRUE)
-#  MD_rob <- mmd(X, mu = par_MMCD$mu, cov_row = par_MMCD$cov_row_inv,
-#                cov_col = par_MMCD$cov_col_inv, inverted = TRUE)
-#  out_quant <- qchisq(0.99, p*q)
-#  
-#  # Plot MMD of all observations
-#  data_plt_md <- data.frame(cbind("Frame" = 1:length(MD_rob), "MD" = sqrt(MD_rob)))
-#  ggplot(data_plt_md, aes(x = Frame, y = MD)) +
-#    geom_point() +
-#    labs(x = "Frame", y = "MMD") +
-#    scale_x_continuous(limits = range(1,n), breaks = seq(from = 50, to = n, by = 50), expand = c(0,3)) +
-#    theme_classic()
-#  
-#  # Plot MMD of last observations
-#  sub_ind <- (1:length(MD_rob))[-(1:475)]
-#  frame_labels <- rep(NA,length(sub_ind))
-#  frame_labels[sub_ind %in% c(487,491,495,500)] <- c("Frame 487: man left of tree", "Frame 491: man behind tree", "Frame 495: man right of tree", "Frame 500: man fully visible")
-#  data_plt_md1 <- data.frame(cbind("Frame" = sub_ind, "MD" = sqrt(MD_rob[sub_ind]), "labels" = frame_labels))
-#  ggplot(data_plt_md1, aes(x = as.numeric(Frame), y = as.numeric(MD), label = labels)) +
-#    geom_point() +
-#    geom_path() +
-#    geom_label_repel(nudge_x = 75, nudge_y = -80, color = "darkblue") +
-#    labs(x = "Frame", y = "MMD") +
-#    scale_x_continuous(limits = range(sub_ind), breaks = seq(from = 480, to = 630, by = 10), expand = c(0,1)) +
-#    theme_classic()
-#  
-#  # Compute Shapley values
-#  shv <- array(dim = dim(X))
-#  shv[,,] <- matrixShapley(X[,,], mu = par_MMCD$mu,
-#                           cov_row = par_MMCD$cov_row_inv, cov_col = par_MMCD$cov_col_inv,
-#                           inverted = TRUE, type = "cell")
-#  
-#  # Function to plot Shapley values for image data
-#  plot_shapley_image <- function(image,shapley_values, lower = -100, upper = 100,
-#                                 title = NULL, positive_only = FALSE, border = TRUE){
-#    shapley_values[shapley_values < lower] <- lower
-#    shapley_values[shapley_values > upper] <- upper
-#    if(positive_only){
-#      shapley_values[shapley_values < 0] <- 0
-#    }
-#  
-#    image_grid <- expand.grid("x" = 1:nrow(shapley_values), "y" = 1:ncol(shapley_values))
-#    image_data <- cbind(image_grid, "z" = as.vector(image), "shv" = as.vector(shapley_values))
-#    plt <- ggplot()
-#    if(any(image != 0)){
-#      plt <- plt +
-#        geom_raster(data = image_data, aes(x, y, fill = z)) +
-#        scale_fill_gradient(low = "black", high = "white",guide=FALSE)
-#    }
-#    plt <- plt +
-#      new_scale("fill") +
-#      geom_raster(data = image_data, aes(x, y, fill = shv), na.rm = TRUE) +
-#      scale_fill_gradientn(colours= c("blue", "transparent", "red"),limits=c(lower, upper),
-#                           guide=FALSE, na.value = "transparent") +
-#      labs(title = title) +
-#      theme_void()+
-#      coord_fixed() +
-#      theme(plot.title = element_text(hjust = 0.5))
-#    if(border){
-#      plt <- plt  +
-#        theme(panel.grid.major = element_blank(),
-#              panel.grid.minor = element_blank(),
-#              panel.background = element_rect(fill = "transparent" ,colour = "black"),
-#              panel.ontop = TRUE,
-#              plot.margin = margin(1, 1, 1, 1, "pt")) +
-#        scale_y_continuous(expand = c(0,0)) +
-#        scale_x_continuous(expand = c(0,0))
-#    }
-#    plt
-#  }
-#  
-#  # Plot Shapley values for selected frames
-#  lims <- 100
-#  gridExtra::grid.arrange(
-#    plot_shapley_image(image = t(apply(X[,,487],2,rev)), shapley_values = (t(apply(shv[,,487],2,rev))),
-#                       lower = -lims, upper = lims, title = "Frame 487", positive_only = TRUE),
-#    plot_shapley_image(image = t(apply(X[,,491],2,rev)), shapley_values = (t(apply(shv[,,491],2,rev))),
-#                       lower = -lims, upper = lims, title = "Frame 491", positive_only = TRUE),
-#    plot_shapley_image(image = t(apply(X[,,495],2,rev)), shapley_values = (t(apply(shv[,,495],2,rev))),
-#                       lower = -lims, upper = lims, title = "Frame 495", positive_only = TRUE),
-#    plot_shapley_image(image = t(apply(X[,,500],2,rev)), shapley_values = (t(apply(shv[,,500],2,rev))),
-#                       lower = -lims, upper = lims, title = "Frame 500", positive_only = TRUE),
-#    nrow = 1
-#  )
+# # Loading the data
+# load(url("https://wis.kuleuven.be/stat/robust/Programs/DO/do-video-data-rdata"))
+# 
+# # Creating the overview plot
+# ind_overview <- c(1,487,491,495,500)
+# plts_overview <- list()
+# for(i in seq_along(ind_overview)){
+#   dim_Video <- dim(Video)
+#   video_grid <- expand.grid("x" = 1:dim_Video[2], "y" = 1:dim_Video[3])
+#   video_long <- data.frame(cbind(video_grid,
+#                                  "r" = as.vector(Video[ind_overview[i],,,1]/255),
+#                                  "g" = as.vector(Video[ind_overview[i],,,2]/255),
+#                                  "b" = as.vector(Video[ind_overview[i],,,3]/255))) %>% mutate(rgb.val=rgb(r,g,b))
+#   plts_overview[[i]] <- ggplot(video_long, aes(y,x)) +
+#     geom_raster(aes(fill=rgb.val)) +
+#     scale_fill_identity() +
+#     theme_void()+
+#     coord_fixed() +
+#     theme(plot.title = element_text(hjust = 0.5),
+#           panel.grid.major = element_blank(),
+#           panel.grid.minor = element_blank(),
+#           panel.background = element_rect(fill = "transparent" ,colour = "black"),
+#           panel.ontop = TRUE,
+#           plot.margin = margin(1, 1, 1, 1, "pt")) +
+#     scale_x_continuous(expand = c(0,0)) +
+#     scale_y_continuous(expand = c(0,0), trans = "reverse") +
+#     labs(title = paste("Frame", ind_overview[i]))
+# }
+# video_overview <- do.call(gridExtra::grid.arrange, args = list("grobs" = plts_overview, "nrow" = 1))
+# 
+# # Transform to grayscale image
+# video_grayscale <- apply(Video, 1:3, mean)
+# X <- aperm(video_grayscale,c(2,3,1))
+# n <- dim(X)[3]
+# p <- dim(X)[1]
+# q <- dim(X)[2]
+# 
+# # MMLE and MMCD parameter estimation
+# par_MMLE <- mmle(X, lambda = 0)
+# set.seed(1)
+# par_MMCD <- mmcd(X, alpha = 0.5,lambda = 0, nsamp = 500, nthreads = 1)
+# 
+# # Compute squared Mahlanobis distances
+# MD <- mmd(X, mu = par_MMLE$mu, cov_row = par_MMLE$cov_row_inv,
+#           cov_col = par_MMLE$cov_col_inv, inverted = TRUE)
+# MD_rob <- mmd(X, mu = par_MMCD$mu, cov_row = par_MMCD$cov_row_inv,
+#               cov_col = par_MMCD$cov_col_inv, inverted = TRUE)
+# out_quant <- qchisq(0.99, p*q)
+# 
+# # Plot MMD of all observations
+# data_plt_md <- data.frame(cbind("Frame" = 1:length(MD_rob), "MD" = sqrt(MD_rob)))
+# ggplot(data_plt_md, aes(x = Frame, y = MD)) +
+#   geom_point() +
+#   labs(x = "Frame", y = "MMD") +
+#   scale_x_continuous(limits = range(1,n), breaks = seq(from = 50, to = n, by = 50), expand = c(0,3)) +
+#   theme_classic()
+# 
+# # Plot MMD of last observations
+# sub_ind <- (1:length(MD_rob))[-(1:475)]
+# frame_labels <- rep(NA,length(sub_ind))
+# frame_labels[sub_ind %in% c(487,491,495,500)] <- c("Frame 487: man left of tree", "Frame 491: man behind tree", "Frame 495: man right of tree", "Frame 500: man fully visible")
+# data_plt_md1 <- data.frame(cbind("Frame" = sub_ind, "MD" = sqrt(MD_rob[sub_ind]), "labels" = frame_labels))
+# ggplot(data_plt_md1, aes(x = as.numeric(Frame), y = as.numeric(MD), label = labels)) +
+#   geom_point() +
+#   geom_path() +
+#   geom_label_repel(nudge_x = 75, nudge_y = -80, color = "darkblue") +
+#   labs(x = "Frame", y = "MMD") +
+#   scale_x_continuous(limits = range(sub_ind), breaks = seq(from = 480, to = 630, by = 10), expand = c(0,1)) +
+#   theme_classic()
+# 
+# # Compute Shapley values
+# shv <- array(dim = dim(X))
+# shv[,,] <- matrixShapley(X[,,], mu = par_MMCD$mu,
+#                          cov_row = par_MMCD$cov_row_inv, cov_col = par_MMCD$cov_col_inv,
+#                          inverted = TRUE, type = "cell")
+# 
+# # Function to plot Shapley values for image data
+# plot_shapley_image <- function(image,shapley_values, lower = -100, upper = 100,
+#                                title = NULL, positive_only = FALSE, border = TRUE){
+#   shapley_values[shapley_values < lower] <- lower
+#   shapley_values[shapley_values > upper] <- upper
+#   if(positive_only){
+#     shapley_values[shapley_values < 0] <- 0
+#   }
+# 
+#   image_grid <- expand.grid("x" = 1:nrow(shapley_values), "y" = 1:ncol(shapley_values))
+#   image_data <- cbind(image_grid, "z" = as.vector(image), "shv" = as.vector(shapley_values))
+#   plt <- ggplot()
+#   if(any(image != 0)){
+#     plt <- plt +
+#       geom_raster(data = image_data, aes(x, y, fill = z)) +
+#       scale_fill_gradient(low = "black", high = "white",guide=FALSE)
+#   }
+#   plt <- plt +
+#     new_scale("fill") +
+#     geom_raster(data = image_data, aes(x, y, fill = shv), na.rm = TRUE) +
+#     scale_fill_gradientn(colours= c("blue", "transparent", "red"),limits=c(lower, upper),
+#                          guide=FALSE, na.value = "transparent") +
+#     labs(title = title) +
+#     theme_void()+
+#     coord_fixed() +
+#     theme(plot.title = element_text(hjust = 0.5))
+#   if(border){
+#     plt <- plt  +
+#       theme(panel.grid.major = element_blank(),
+#             panel.grid.minor = element_blank(),
+#             panel.background = element_rect(fill = "transparent" ,colour = "black"),
+#             panel.ontop = TRUE,
+#             plot.margin = margin(1, 1, 1, 1, "pt")) +
+#       scale_y_continuous(expand = c(0,0)) +
+#       scale_x_continuous(expand = c(0,0))
+#   }
+#   plt
+# }
+# 
+# # Plot Shapley values for selected frames
+# lims <- 100
+# gridExtra::grid.arrange(
+#   plot_shapley_image(image = t(apply(X[,,487],2,rev)), shapley_values = (t(apply(shv[,,487],2,rev))),
+#                      lower = -lims, upper = lims, title = "Frame 487", positive_only = TRUE),
+#   plot_shapley_image(image = t(apply(X[,,491],2,rev)), shapley_values = (t(apply(shv[,,491],2,rev))),
+#                      lower = -lims, upper = lims, title = "Frame 491", positive_only = TRUE),
+#   plot_shapley_image(image = t(apply(X[,,495],2,rev)), shapley_values = (t(apply(shv[,,495],2,rev))),
+#                      lower = -lims, upper = lims, title = "Frame 495", positive_only = TRUE),
+#   plot_shapley_image(image = t(apply(X[,,500],2,rev)), shapley_values = (t(apply(shv[,,500],2,rev))),
+#                      lower = -lims, upper = lims, title = "Frame 500", positive_only = TRUE),
+#   nrow = 1
+# )
 

@@ -7,6 +7,9 @@
 cstep(
   X,
   alpha = 0.5,
+  cov_row_init = NULL,
+  cov_col_init = NULL,
+  diag = "none",
   h_init = -1L,
   init = TRUE,
   max_iter = 100L,
@@ -19,6 +22,12 @@ cstep(
 \item{X}{a 3d array of dimension \eqn{(p,q,n)}, containing \eqn{n} matrix-variate samples of \eqn{p} rows and \eqn{q} columns in each slice.}
 
 \item{alpha}{numeric parameter between 0.5 (default) and 1. Controls the size \eqn{h \approx alpha * n} of the h-subset over which the determinant is minimized.}
+
+\item{cov_row_init}{matrix. Initial \code{cov_row} \eqn{p \times p} matrix. Identity by default.}
+
+\item{cov_col_init}{matrix. Initial \code{cov_col} \eqn{p \times p} matrix. Identity by default.}
+
+\item{diag}{Character. If "none" (default) all entries of \code{cov_row} and \code{cov_col} are estimated. If either "both", "row", or "col" only the diagonal entries of the respective matrices are estimated.}
 
 \item{h_init}{Integer. Size of initial h-subset. If smaller than 0 (default) size is chosen automatically.}
 

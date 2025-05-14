@@ -16,12 +16,23 @@
 #' @export
 #'
 #' @examples
+#' set.seed(123)
 #' n = 1000; p = 2; q = 3
 #' mu = matrix(rep(0, p*q), nrow = p, ncol = q)
 #' cov_row = matrix(c(5,2,2,4), nrow = p, ncol = p)
 #' cov_col = matrix(c(3,2,1,2,3,2,1,2,3), nrow = q, ncol = q)
 #' X <- rmatnorm(n = 1000, mu, cov_row, cov_col)
+#' X[1:2,1,1] <- c(-10, 10)
+#' X[2,2,1] <- 20
+#'
+#' # Cellwise Shapley values additively decompose the squared Mahalanobis distance
+#' # into outlyingness contributions of each cell:
+#' cellwise_shv <- matrixShapley(X, mu, cov_row, cov_col)
+#' cellwise_shv[,,1]
 #' distances <- mmd(X, mu, cov_row, cov_col)
+#' # verify that sum of cellwise Shapley values is equal to squared MMDs:
+#' all.equal(target = apply(cellwise_shv, 3, sum), current = distances)
+#' # For plots and more details see vignette("MMCD_examples").
 matrixShapley <- function(X, mu = NULL, cov_row, cov_col, inverted = FALSE, type = "cell"){
   if(is.null(mu)){
     mu <- array(0, dim = dim(X))

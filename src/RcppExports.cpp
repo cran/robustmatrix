@@ -12,32 +12,36 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // MLErow
-arma::mat MLErow(const arma::cube& X_std, const arma::mat& cov_col_inv);
-RcppExport SEXP _robustmatrix_MLErow(SEXP X_stdSEXP, SEXP cov_col_invSEXP) {
+arma::mat MLErow(const arma::cube& X_std, const arma::mat& cov_col_inv, const bool diag, int nthreads);
+RcppExport SEXP _robustmatrix_MLErow(SEXP X_stdSEXP, SEXP cov_col_invSEXP, SEXP diagSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::cube& >::type X_std(X_stdSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type cov_col_inv(cov_col_invSEXP);
-    rcpp_result_gen = Rcpp::wrap(MLErow(X_std, cov_col_inv));
+    Rcpp::traits::input_parameter< const bool >::type diag(diagSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(MLErow(X_std, cov_col_inv, diag, nthreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // MLEcol
-arma::mat MLEcol(const arma::cube& X_std, const arma::mat& cov_row_inv);
-RcppExport SEXP _robustmatrix_MLEcol(SEXP X_stdSEXP, SEXP cov_row_invSEXP) {
+arma::mat MLEcol(const arma::cube& X_std, const arma::mat& cov_row_inv, const bool diag, int nthreads);
+RcppExport SEXP _robustmatrix_MLEcol(SEXP X_stdSEXP, SEXP cov_row_invSEXP, SEXP diagSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::cube& >::type X_std(X_stdSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type cov_row_inv(cov_row_invSEXP);
-    rcpp_result_gen = Rcpp::wrap(MLEcol(X_std, cov_row_inv));
+    Rcpp::traits::input_parameter< const bool >::type diag(diagSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(MLEcol(X_std, cov_row_inv, diag, nthreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // KroneckerNorm
-double KroneckerNorm(arma::mat A, arma::mat B, arma::mat C, arma::mat D);
-RcppExport SEXP _robustmatrix_KroneckerNorm(SEXP ASEXP, SEXP BSEXP, SEXP CSEXP, SEXP DSEXP) {
+double KroneckerNorm(arma::mat A, arma::mat B, arma::mat C, arma::mat D, const bool diag_row, const bool diag_col);
+RcppExport SEXP _robustmatrix_KroneckerNorm(SEXP ASEXP, SEXP BSEXP, SEXP CSEXP, SEXP DSEXP, SEXP diag_rowSEXP, SEXP diag_colSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -45,21 +49,27 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type B(BSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type C(CSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type D(DSEXP);
-    rcpp_result_gen = Rcpp::wrap(KroneckerNorm(A, B, C, D));
+    Rcpp::traits::input_parameter< const bool >::type diag_row(diag_rowSEXP);
+    Rcpp::traits::input_parameter< const bool >::type diag_col(diag_colSEXP);
+    rcpp_result_gen = Rcpp::wrap(KroneckerNorm(A, B, C, D, diag_row, diag_col));
     return rcpp_result_gen;
 END_RCPP
 }
 // mmle
-Rcpp::List mmle(const arma::cube& X, const int max_iter, const double lambda, const bool silent);
-RcppExport SEXP _robustmatrix_mmle(SEXP XSEXP, SEXP max_iterSEXP, SEXP lambdaSEXP, SEXP silentSEXP) {
+Rcpp::List mmle(const arma::cube& X, const Rcpp::Nullable<arma::mat> cov_row_init, const Rcpp::Nullable<arma::mat> cov_col_init, std::string diag, const int max_iter, const double lambda, const bool silent, int nthreads);
+RcppExport SEXP _robustmatrix_mmle(SEXP XSEXP, SEXP cov_row_initSEXP, SEXP cov_col_initSEXP, SEXP diagSEXP, SEXP max_iterSEXP, SEXP lambdaSEXP, SEXP silentSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::cube& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Nullable<arma::mat> >::type cov_row_init(cov_row_initSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Nullable<arma::mat> >::type cov_col_init(cov_col_initSEXP);
+    Rcpp::traits::input_parameter< std::string >::type diag(diagSEXP);
     Rcpp::traits::input_parameter< const int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< const bool >::type silent(silentSEXP);
-    rcpp_result_gen = Rcpp::wrap(mmle(X, max_iter, lambda, silent));
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(mmle(X, cov_row_init, cov_col_init, diag, max_iter, lambda, silent, nthreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -79,8 +89,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // TensorMMD
-arma::vec TensorMMD(const arma::cube X, arma::mat mu, arma::mat cov_row, arma::mat cov_col, const bool inverted);
-RcppExport SEXP _robustmatrix_TensorMMD(SEXP XSEXP, SEXP muSEXP, SEXP cov_rowSEXP, SEXP cov_colSEXP, SEXP invertedSEXP) {
+arma::vec TensorMMD(const arma::cube X, arma::mat mu, arma::mat cov_row, arma::mat cov_col, const bool inverted, int nthreads);
+RcppExport SEXP _robustmatrix_TensorMMD(SEXP XSEXP, SEXP muSEXP, SEXP cov_rowSEXP, SEXP cov_colSEXP, SEXP invertedSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -89,61 +99,70 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type cov_row(cov_rowSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type cov_col(cov_colSEXP);
     Rcpp::traits::input_parameter< const bool >::type inverted(invertedSEXP);
-    rcpp_result_gen = Rcpp::wrap(TensorMMD(X, mu, cov_row, cov_col, inverted));
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(TensorMMD(X, mu, cov_row, cov_col, inverted, nthreads));
     return rcpp_result_gen;
 END_RCPP
 }
 // cstep
-Rcpp::List cstep(const arma::cube& X, const double alpha, int h_init, bool init, const int max_iter, const int max_iter_MLE, const double lambda, const bool adapt_alpha);
-RcppExport SEXP _robustmatrix_cstep(SEXP XSEXP, SEXP alphaSEXP, SEXP h_initSEXP, SEXP initSEXP, SEXP max_iterSEXP, SEXP max_iter_MLESEXP, SEXP lambdaSEXP, SEXP adapt_alphaSEXP) {
+Rcpp::List cstep(const arma::cube& X, const double alpha, const Rcpp::Nullable<arma::mat> cov_row_init, const Rcpp::Nullable<arma::mat> cov_col_init, std::string diag, int h_init, bool init, const int max_iter, const int max_iter_MLE, const double lambda, const bool adapt_alpha);
+RcppExport SEXP _robustmatrix_cstep(SEXP XSEXP, SEXP alphaSEXP, SEXP cov_row_initSEXP, SEXP cov_col_initSEXP, SEXP diagSEXP, SEXP h_initSEXP, SEXP initSEXP, SEXP max_iterSEXP, SEXP max_iter_MLESEXP, SEXP lambdaSEXP, SEXP adapt_alphaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::cube& >::type X(XSEXP);
     Rcpp::traits::input_parameter< const double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Nullable<arma::mat> >::type cov_row_init(cov_row_initSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Nullable<arma::mat> >::type cov_col_init(cov_col_initSEXP);
+    Rcpp::traits::input_parameter< std::string >::type diag(diagSEXP);
     Rcpp::traits::input_parameter< int >::type h_init(h_initSEXP);
     Rcpp::traits::input_parameter< bool >::type init(initSEXP);
     Rcpp::traits::input_parameter< const int >::type max_iter(max_iterSEXP);
     Rcpp::traits::input_parameter< const int >::type max_iter_MLE(max_iter_MLESEXP);
     Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< const bool >::type adapt_alpha(adapt_alphaSEXP);
-    rcpp_result_gen = Rcpp::wrap(cstep(X, alpha, h_init, init, max_iter, max_iter_MLE, lambda, adapt_alpha));
+    rcpp_result_gen = Rcpp::wrap(cstep(X, alpha, cov_row_init, cov_col_init, diag, h_init, init, max_iter, max_iter_MLE, lambda, adapt_alpha));
     return rcpp_result_gen;
 END_RCPP
 }
 // mmcd
-Rcpp::List mmcd(const arma::cube& X, const int nsamp, double alpha, const double lambda, const int max_iter_cstep, const int max_iter_MLE, const int max_iter_cstep_init, const int max_iter_MLE_init, const bool adapt_alpha, const bool reweight, const std::string scale_consistency, const double outlier_quant, int nthreads);
-RcppExport SEXP _robustmatrix_mmcd(SEXP XSEXP, SEXP nsampSEXP, SEXP alphaSEXP, SEXP lambdaSEXP, SEXP max_iter_cstepSEXP, SEXP max_iter_MLESEXP, SEXP max_iter_cstep_initSEXP, SEXP max_iter_MLE_initSEXP, SEXP adapt_alphaSEXP, SEXP reweightSEXP, SEXP scale_consistencySEXP, SEXP outlier_quantSEXP, SEXP nthreadsSEXP) {
+Rcpp::List mmcd(const arma::cube& X, const int nsamp, double alpha, const Rcpp::Nullable<arma::mat> cov_row_init, const Rcpp::Nullable<arma::mat> cov_col_init, std::string diag, const double lambda, const int max_iter_cstep, const int max_iter_MLE, const int max_iter_cstep_init, const int max_iter_MLE_init, const int nmini, const int nsub_pop, const bool adapt_alpha, const bool reweight, const std::string scale_consistency, const double outlier_quant, int nthreads);
+RcppExport SEXP _robustmatrix_mmcd(SEXP XSEXP, SEXP nsampSEXP, SEXP alphaSEXP, SEXP cov_row_initSEXP, SEXP cov_col_initSEXP, SEXP diagSEXP, SEXP lambdaSEXP, SEXP max_iter_cstepSEXP, SEXP max_iter_MLESEXP, SEXP max_iter_cstep_initSEXP, SEXP max_iter_MLE_initSEXP, SEXP nminiSEXP, SEXP nsub_popSEXP, SEXP adapt_alphaSEXP, SEXP reweightSEXP, SEXP scale_consistencySEXP, SEXP outlier_quantSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::cube& >::type X(XSEXP);
     Rcpp::traits::input_parameter< const int >::type nsamp(nsampSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Nullable<arma::mat> >::type cov_row_init(cov_row_initSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Nullable<arma::mat> >::type cov_col_init(cov_col_initSEXP);
+    Rcpp::traits::input_parameter< std::string >::type diag(diagSEXP);
     Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< const int >::type max_iter_cstep(max_iter_cstepSEXP);
     Rcpp::traits::input_parameter< const int >::type max_iter_MLE(max_iter_MLESEXP);
     Rcpp::traits::input_parameter< const int >::type max_iter_cstep_init(max_iter_cstep_initSEXP);
     Rcpp::traits::input_parameter< const int >::type max_iter_MLE_init(max_iter_MLE_initSEXP);
+    Rcpp::traits::input_parameter< const int >::type nmini(nminiSEXP);
+    Rcpp::traits::input_parameter< const int >::type nsub_pop(nsub_popSEXP);
     Rcpp::traits::input_parameter< const bool >::type adapt_alpha(adapt_alphaSEXP);
     Rcpp::traits::input_parameter< const bool >::type reweight(reweightSEXP);
     Rcpp::traits::input_parameter< const std::string >::type scale_consistency(scale_consistencySEXP);
     Rcpp::traits::input_parameter< const double >::type outlier_quant(outlier_quantSEXP);
     Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(mmcd(X, nsamp, alpha, lambda, max_iter_cstep, max_iter_MLE, max_iter_cstep_init, max_iter_MLE_init, adapt_alpha, reweight, scale_consistency, outlier_quant, nthreads));
+    rcpp_result_gen = Rcpp::wrap(mmcd(X, nsamp, alpha, cov_row_init, cov_col_init, diag, lambda, max_iter_cstep, max_iter_MLE, max_iter_cstep_init, max_iter_MLE_init, nmini, nsub_pop, adapt_alpha, reweight, scale_consistency, outlier_quant, nthreads));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_robustmatrix_MLErow", (DL_FUNC) &_robustmatrix_MLErow, 2},
-    {"_robustmatrix_MLEcol", (DL_FUNC) &_robustmatrix_MLEcol, 2},
-    {"_robustmatrix_KroneckerNorm", (DL_FUNC) &_robustmatrix_KroneckerNorm, 4},
-    {"_robustmatrix_mmle", (DL_FUNC) &_robustmatrix_mmle, 4},
+    {"_robustmatrix_MLErow", (DL_FUNC) &_robustmatrix_MLErow, 4},
+    {"_robustmatrix_MLEcol", (DL_FUNC) &_robustmatrix_MLEcol, 4},
+    {"_robustmatrix_KroneckerNorm", (DL_FUNC) &_robustmatrix_KroneckerNorm, 6},
+    {"_robustmatrix_mmle", (DL_FUNC) &_robustmatrix_mmle, 8},
     {"_robustmatrix_MMD", (DL_FUNC) &_robustmatrix_MMD, 5},
-    {"_robustmatrix_TensorMMD", (DL_FUNC) &_robustmatrix_TensorMMD, 5},
-    {"_robustmatrix_cstep", (DL_FUNC) &_robustmatrix_cstep, 8},
-    {"_robustmatrix_mmcd", (DL_FUNC) &_robustmatrix_mmcd, 13},
+    {"_robustmatrix_TensorMMD", (DL_FUNC) &_robustmatrix_TensorMMD, 6},
+    {"_robustmatrix_cstep", (DL_FUNC) &_robustmatrix_cstep, 11},
+    {"_robustmatrix_mmcd", (DL_FUNC) &_robustmatrix_mmcd, 18},
     {NULL, NULL, 0}
 };
 

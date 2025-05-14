@@ -8,11 +8,16 @@ mmcd(
   X,
   nsamp = 500L,
   alpha = 0.5,
+  cov_row_init = NULL,
+  cov_col_init = NULL,
+  diag = "none",
   lambda = 0,
   max_iter_cstep = 100L,
   max_iter_MLE = 100L,
   max_iter_cstep_init = 2L,
   max_iter_MLE_init = 2L,
+  nmini = 300L,
+  nsub_pop = 1500L,
   adapt_alpha = TRUE,
   reweight = TRUE,
   scale_consistency = "quant",
@@ -27,6 +32,12 @@ mmcd(
 
 \item{alpha}{numeric parameter between 0.5 (default) and 1. Controls the size \eqn{h \approx alpha * n} of the h-subset over which the determinant is minimized.}
 
+\item{cov_row_init}{matrix. Initial \code{cov_row} \eqn{p \times p} matrix. Identity by default.}
+
+\item{cov_col_init}{matrix. Initial \code{cov_col} \eqn{p \times p} matrix. Identity by default.}
+
+\item{diag}{Character. If "none" (default) all entries of \code{cov_row} and \code{cov_col} are estimated. If either "both", "row", or "col" only the diagonal entries of the respective matrices are estimated.}
+
 \item{lambda}{a smooting parameter for the rowwise and columnwise covariance matrices.}
 
 \item{max_iter_cstep}{upper limit of C-step iterations (default is 100)}
@@ -36,6 +47,10 @@ mmcd(
 \item{max_iter_cstep_init}{upper limit of C-step iterations for initial h-subsets (default is 2)}
 
 \item{max_iter_MLE_init}{upper limit of MLE iterations for initial h-subsets (default is 2)}
+
+\item{nmini}{for \eqn{n > 2*nmini} the algorithm splits the data into smaller subsets with at least \code{nmini} samples for initialization (default is 300)}
+
+\item{nsub_pop}{for \eqn{n > 2*nmini} a subpopulation of \eqn{\min(n,nsub\_pop)} samples is divided into \eqn{k = floor(\min(n,nsub\_pop)/nmini)} subsets  for initialization (default is 1500)}
 
 \item{adapt_alpha}{Logical. If TRUE (default) alpha is adapted to take the dimension of the data into account.}
 
